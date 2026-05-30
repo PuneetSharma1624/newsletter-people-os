@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(Get-ChildItem -Recurse \"C:\\\\Users\\\\hp\\\\OneDrive\\\\Desktop\\\\Claude code\\\\Newsletter People OS\" -ErrorAction SilentlyContinue)",
+      "Bash(Select-Object FullName)",
+      "PowerShell(cd \"C:\\\\Users\\\\hp\\\\OneDrive\\\\Desktop\\\\Claude code\\\\Newsletter People OS\"; python -m compileall . 2>&1 | Where-Object { $_ -notmatch \"Listing\" }; pytest tests/ -q 2>&1)",
+      "PowerShell(cd \"C:\\\\Users\\\\hp\\\\OneDrive\\\\Desktop\\\\Claude code\\\\Newsletter People OS\"; \\(Get-Content newsletter\\\\static_publisher.py\\) -replace 'datetime.datetime.utcnow\\\\\\(\\\\\\).isoformat\\\\\\(\\\\\\) \\\\+ \"Z\"', 'datetime.datetime.now\\(datetime.timezone.utc\\).isoformat\\(\\).replace\\(\"+00:00\",\"Z\"\\)' | Set-Content newsletter\\\\static_publisher.py; Write-Host \"Fixed\")",
+      "Bash(python -m compileall newsletter/)",
+      "Bash(pytest tests/ -q)",
+      "Bash(python -m compileall newsletter/ -q)",
+      "Bash(python -c ' *)"
+    ]
+  }
+}

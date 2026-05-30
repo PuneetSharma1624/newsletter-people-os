@@ -1,0 +1,149 @@
+"""Tests for source URL integrity in PeopleOS Brief pipeline."""
+import glob
+import json
+import pathlib
+import pytest
+
+from newsletter.utils import is_probably_homepage_url, validate_article_url
+
+
+# ─── URL VALIDATION UNIT TESTS ───────────────────────────────────────────────
+
+class TestIsHomepageUrl:
+    def test_empty_url(self):
+        assert is_probably_homepage_url("") is True
+
+    def test_none_url(self):
+        assert is_probably_homepage_url(None) is True  # type: ignore
+
+    def test_bare_homepage(self):
+        assert is_probably_homepage_url("https://www.moneycontrol.com/") is True
+
+    def test_domain_only_no_slash(self):
+        assert is_probably_homepage_url("https://moneycontrol.com") is True
+
+    def test_arxiv_homepage(self):
+        assert is_probably_homepage_url("https://arxiv.org/") is True
+
+    def test_single_segment_reuters(self):
+        assert is_probably_homepage_url("https://www.reuters.com/markets") is True
+
+    def test_single_segment_cnbc(self):
+        assert is_probably_homepage_url("https://cnbc.com/technology") is True
+
+    def test_x_com_homepage(self):
+        assert is_probably_homepage_url("https://x.com") is True
+
+    # Articles — should NOT be flagged
+    def test_moneycontrol_article(self):
+        assert is_probably_homepage_url("https://www.moneycontrol.com/news/business/markets/sensex-nifty-update.html") is False
+
+    def test_reuters_article(self):
+        assert is_probably_homepage_url("https://www.reuters.com/markets/us/sp500-gains-2026-05-30/") is False
+
+    def test_arxiv_paper(self):
+        assert is_probably_homepage_url("https://arxiv.org/abs/2406.12345") is False
+
+    def test_et_article(self):
+        assert is_probably_homepage_url("https://economictimes.indiatimes.com/markets/stocks/market-stats/nifty-update/articleshow/123.cms") is False
+
+    def test_hbr_article(self):
+        assert is_probably_homepage_url("https://hbr.org/2026/05/psychological-safety-ai-adoption") is False
+
+    def test_deepmind_research(self):
+        assert is_probably_homepage_url("https://deepmind.google/research/publications/alphafold3-protein-drug/") is False
+
+
+class TestValidateArticleUrl:
+    def test_valid_article(self):
+        result = validate_article_url("https://www.reuters.com/markets/us/sp500-article-2026/")
+        assert result["is_valid_article_url"] is True
+        assert result["reason"] == "ok"
+
+    def test_homepage(self):
+        result = validate_article_url("https://www.moneycontrol.com/")
+        assert result["is_valid_article_url"] is False
+        assert result["reason"] == "homepage_url"
+
+    def test_missing_url(self):
+        result = validate_article_url("")
+        assert result["is_valid_article_url"] is False
+        assert result["reason"] == "missing_url"
+
+    def test_hash_placeholder(self):
+        result = validate_article_url("#")
+        assert result["is_valid_article_url"] is False
+
+
+# ─── DEMO DATA INTEGRITY TESTS ───────────────────────────────────────────────
+
+ISSUES_DIR = pathlib.Path("landing/data/issues")
+
+
+def _load_all_items():
+    items = []
+    for path in sorted(ISSUES_DIR.glob("*.json")):
+        with open(path, encoding="utf-8") as f:
+            issue = json.load(f)
+        for section in issue.get("sections", []):
+            for item in section.get("items", []):
+                items.append((path.name, section.get("code"), item))
+    return items
+
+
+def test_issue_files_exist():
+    files = list(ISSUES_DIR.glob("*.json"))
+    assert len(files) >= 1, "No issue files found — run --seed-demo"
+
+
+def test_all_items_have_source_url():
+    """Every item must have a source_url field."""
+    missing = []
+    for fname, code, item in _load_all_items():
+        if not item.get("source_url"):
+            missing.append(f"{fname} {code}: {item.get('headline', '?')!r}")
+    assert not missing, f"Items missing source_url:\n" + "\n".join(missing)
+
+
+def test_no_homepage_source_urls():
+    """source_url must not be a homepage or single-segment section page."""
+    bad = []
+    for fname, code, item in _load_all_items():
+        url = item.get("source_url", "")
+        if is_probably_homepage_url(url):
+            bad.append(f"{fname} {code}: {item.get('headline','?')!r} → {url!r}")
+    assert not bad, f"Homepage URLs found in issue data:\n" + "\n".join(bad)
+
+
+def test_source_url_and_domain_are_separate():
+    """source_url must differ from source_domain (not same collapsed value)."""
+    same = []
+    for fname, code, item in _load_all_items():
+        url = item.get("source_url", "")
+        domain = item.get("source_domain", "")
+        if url and domain and url == domain:
+            same.append(f"{fname} {code}: source_url == source_domain == {url!r}")
+    assert not same, "\n".join(same)
+
+
+# ─── DASHBOARD JS USES SOURCE_URL ────────────────────────────────────────────
+
+def test_dashboard_js_uses_source_url():
+    """dashboard.js must reference item.source_url, not item.source_domain as href."""
+    js_path = pathlib.Path("landing/dashboard.js")
+    assert js_path.exists(), "landing/dashboard.js not found"
+    code = js_path.read_text(encoding="utf-8")
+    assert "item.source_url" in code, "dashboard.js does not use item.source_url"
+    # Must not use source_domain as href
+    assert 'href="${item.source_domain}' not in code
+    assert "href=item.source_domain" not in code
+
+
+# ─── EMAIL RENDERER USES SOURCE_URL ──────────────────────────────────────────
+
+def test_renderer_uses_source_url():
+    """renderer.py must use source_url for email links."""
+    renderer_path = pathlib.Path("newsletter/renderer.py")
+    assert renderer_path.exists()
+    code = renderer_path.read_text(encoding="utf-8")
+    assert "source_url" in code, "renderer.py does not reference source_url"

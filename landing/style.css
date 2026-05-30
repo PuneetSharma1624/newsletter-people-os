@@ -1,0 +1,312 @@
+/* PeopleOS Brief — Premium dark landing page */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #0a0a0a;
+  --bg2: #111111;
+  --bg3: #1a1a1a;
+  --border: #222222;
+  --text: #e8e8e8;
+  --text-muted: #888888;
+  --text-dim: #555555;
+  --accent: #7c6af7;
+  --accent-hover: #9585ff;
+  --accent-glow: rgba(124, 106, 247, 0.15);
+  --white: #ffffff;
+  --danger: #ef4444;
+  --success: #22c55e;
+  --radius: 10px;
+  --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+html { font-size: 16px; scroll-behavior: smooth; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  line-height: 1.6;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+.page {
+  max-width: 780px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+/* NAV */
+.nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 28px 0 0;
+}
+
+.nav-brand {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--white);
+  letter-spacing: -0.01em;
+}
+
+.nav-tag {
+  font-size: 0.8rem;
+  color: var(--text-dim);
+}
+
+/* HERO */
+.hero {
+  padding: 80px 0 64px;
+}
+
+.eyebrow {
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
+  background: var(--accent-glow);
+  border: 1px solid rgba(124, 106, 247, 0.25);
+  border-radius: 999px;
+  padding: 4px 14px;
+  margin-bottom: 28px;
+}
+
+.headline {
+  font-size: clamp(2rem, 5vw, 3.25rem);
+  font-weight: 700;
+  color: var(--white);
+  line-height: 1.18;
+  letter-spacing: -0.03em;
+  margin-bottom: 24px;
+}
+
+.sub {
+  font-size: 1.1rem;
+  color: var(--text-muted);
+  max-width: 540px;
+  line-height: 1.7;
+  margin-bottom: 40px;
+}
+
+/* FORM */
+.subscribe-form { width: 100%; }
+
+.input-row {
+  display: flex;
+  gap: 10px;
+  max-width: 520px;
+}
+
+.email-input {
+  flex: 1;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--white);
+  font-family: var(--font);
+  font-size: 0.95rem;
+  padding: 14px 18px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.email-input::placeholder { color: var(--text-dim); }
+.email-input:focus { border-color: var(--accent); }
+
+.btn-subscribe {
+  background: var(--accent);
+  border: none;
+  border-radius: var(--radius);
+  color: var(--white);
+  cursor: pointer;
+  font-family: var(--font);
+  font-size: 0.9rem;
+  font-weight: 600;
+  padding: 14px 24px;
+  white-space: nowrap;
+  transition: background 0.2s, opacity 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 140px;
+  justify-content: center;
+}
+
+.btn-subscribe:hover { background: var(--accent-hover); }
+.btn-subscribe:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.loader {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  display: inline-block;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.form-message {
+  margin-top: 14px;
+  font-size: 0.9rem;
+  min-height: 22px;
+  max-width: 520px;
+}
+
+.form-message.success { color: var(--success); }
+.form-message.error   { color: var(--danger); }
+
+.privacy {
+  margin-top: 16px;
+  font-size: 0.8rem;
+  color: var(--text-dim);
+}
+
+/* TOPICS */
+.topics {
+  padding: 56px 0;
+  border-top: 1px solid var(--border);
+}
+
+.topics-heading {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-bottom: 24px;
+}
+
+.topics-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  list-style: none;
+}
+
+.topics-list li {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  padding: 7px 16px;
+}
+
+/* POSITIONING */
+.positioning {
+  padding: 48px 0;
+  border-top: 1px solid var(--border);
+}
+
+.quote {
+  border-left: 3px solid var(--accent);
+  padding-left: 20px;
+  font-size: 1.15rem;
+  font-style: italic;
+  color: var(--text-muted);
+  max-width: 500px;
+}
+
+/* FOOTER */
+.footer {
+  padding: 32px 0 40px;
+  border-top: 1px solid var(--border);
+}
+
+.footer p {
+  font-size: 0.8rem;
+  color: var(--text-dim);
+}
+
+.footer a {
+  color: var(--text-dim);
+  text-decoration: none;
+}
+.footer a:hover { color: var(--text-muted); }
+
+/* RESPONSIVE */
+/* HERO CTAS */
+.hero-ctas {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 28px;
+  flex-wrap: wrap;
+}
+
+.btn-read {
+  display: inline-block;
+  background: var(--accent);
+  color: var(--white);
+  text-decoration: none;
+  font-size: 0.9rem;
+  font-weight: 700;
+  padding: 13px 24px;
+  border-radius: var(--radius);
+  transition: background 0.2s;
+}
+.btn-read:hover { background: var(--accent-hover); }
+
+.btn-archive {
+  display: inline-block;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  text-decoration: none;
+  font-size: 0.9rem;
+  font-weight: 600;
+  padding: 13px 24px;
+  border-radius: var(--radius);
+  transition: all 0.2s;
+}
+.btn-archive:hover { border-color: var(--accent); color: var(--accent); }
+
+/* 12 SECTIONS PREVIEW GRID */
+.sections-preview-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 10px;
+}
+
+.section-preview-card {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  transition: border-color 0.15s;
+}
+.section-preview-card:hover { border-color: #2d2b55; }
+
+.section-code {
+  font-size: 0.7rem;
+  font-weight: 800;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.section-preview-name {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--white);
+}
+.section-preview-desc {
+  font-size: 0.75rem;
+  color: var(--text-dim);
+}
+
+@media (max-width: 520px) {
+  .hero { padding: 56px 0 48px; }
+  .input-row { flex-direction: column; }
+  .btn-subscribe, .btn-read, .btn-archive { width: 100%; text-align: center; }
+  .hero-ctas { flex-direction: column; }
+  .headline { font-size: 1.85rem; }
+  .sections-preview-grid { grid-template-columns: repeat(2, 1fr); }
+}

@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin — PeopleOS Brief</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    :root{--bg:#0a0a0f;--bg2:#111118;--bg3:#1a1a2e;--border:#1e1e2e;--text:#e8e8e8;--muted:#888;--accent:#7c6af7;--white:#fff;--danger:#ef4444;--font:'Inter',sans-serif}
+    body{background:var(--bg);color:var(--text);font-family:var(--font);display:flex;align-items:center;justify-content:center;min-height:100vh;}
+    .box{width:100%;max-width:400px;padding:0 24px;}
+    .brand{font-size:0.8rem;font-weight:800;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px;}
+    h1{font-size:1.5rem;font-weight:800;color:var(--white);margin-bottom:6px;letter-spacing:-0.02em;}
+    .sub{font-size:0.85rem;color:var(--muted);margin-bottom:28px;}
+    .field{margin-bottom:16px;}
+    label{display:block;font-size:0.8rem;font-weight:600;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.05em;}
+    input[type=password]{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--white);font-family:var(--font);font-size:0.95rem;padding:12px 16px;outline:none;transition:border-color 0.2s;}
+    input:focus{border-color:var(--accent);}
+    .btn{width:100%;background:var(--accent);border:none;border-radius:8px;color:var(--white);cursor:pointer;font-family:var(--font);font-size:0.9rem;font-weight:700;padding:13px;transition:background 0.2s;}
+    .btn:hover{background:#9585ff;}
+    .btn:disabled{opacity:0.6;cursor:not-allowed;}
+    .msg{margin-top:12px;font-size:0.875rem;min-height:20px;text-align:center;}
+    .msg.error{color:var(--danger);}
+    .back{margin-top:20px;text-align:center;font-size:0.8rem;}
+    .back a{color:var(--muted);text-decoration:none;}
+    .back a:hover{color:var(--white);}
+    .security-note{margin-top:24px;padding:12px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;font-size:0.75rem;color:var(--muted);line-height:1.5;}
+  </style>
+</head>
+<body>
+  <div class="box">
+    <div class="brand">PeopleOS Brief</div>
+    <h1>Admin Login</h1>
+    <p class="sub">Enter your admin access token to continue.</p>
+    <form id="loginForm">
+      <div class="field">
+        <label for="tokenInput">Admin Token</label>
+        <input type="password" id="tokenInput" placeholder="••••••••••••••••" autocomplete="current-password" required />
+      </div>
+      <button type="submit" class="btn" id="loginBtn">Login</button>
+      <p class="msg" id="msg"></p>
+    </form>
+    <div class="security-note">
+      This page is for authorized admin access only. Guest visitors use the public dashboard at <a href="/" style="color:var(--accent)">PeopleOS Brief</a>.
+    </div>
+    <div class="back"><a href="/">← Back to Dashboard</a></div>
+  </div>
+  <script>
+    const saved = sessionStorage.getItem('admin_token');
+    if (saved) { window.location.href = '/admin/dashboard/'; }
+
+    document.getElementById('loginForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      const btn = document.getElementById('loginBtn');
+      const msg = document.getElementById('msg');
+      const token = document.getElementById('tokenInput').value.trim();
+      if (!token) { msg.textContent = 'Token required.'; msg.className = 'msg error'; return; }
+      btn.disabled = true;
+      btn.textContent = 'Checking...';
+      msg.textContent = '';
+      try {
+        const res = await fetch('/api/admin/login', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({token}),
+        });
+        const data = await res.json();
+        if (data.ok) {
+          sessionStorage.setItem('admin_token', data.session);
+          window.location.href = '/admin/dashboard/';
+        } else {
+          msg.textContent = data.message || 'Invalid token.';
+          msg.className = 'msg error';
+          btn.disabled = false;
+          btn.textContent = 'Login';
+        }
+      } catch {
+        msg.textContent = 'Network error. Try again.';
+        msg.className = 'msg error';
+        btn.disabled = false;
+        btn.textContent = 'Login';
+      }
+    });
+  </script>
+</body>
+</html>

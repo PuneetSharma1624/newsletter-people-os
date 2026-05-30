@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="PeopleOS Brief — Daily intelligence dashboard for AI, work, leadership, and people systems." />
+  <title>PeopleOS Brief — Intelligence Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/style.css" />
+  <link rel="stylesheet" href="/brief.css" />
+</head>
+<body>
+  <!-- NAV -->
+  <nav class="nav">
+    <a href="/" class="nav-brand">PeopleOS Brief</a>
+    <div class="nav-links">
+      <a href="/brief" class="nav-link nav-link--active">Dashboard</a>
+      <a href="/archive" class="nav-link">Archive</a>
+      <a href="/" class="nav-cta">Subscribe</a>
+    </div>
+  </nav>
+
+  <!-- DATE BAR -->
+  <div class="date-bar" id="dateBar">
+    <div class="date-bar-inner">
+      <div class="date-chips" id="dateChips">
+        <!-- Populated by JS -->
+      </div>
+      <input type="date" id="datePicker" class="date-picker" title="Jump to date" />
+    </div>
+  </div>
+
+  <!-- SECTION FILTER -->
+  <div class="section-filter" id="sectionFilter">
+    <div class="section-filter-inner">
+      <button class="sf-btn sf-btn--active" data-section="all">All</button>
+      <button class="sf-btn" data-section="india_stock_market">India Stocks</button>
+      <button class="sf-btn" data-section="us_stock_market">US Stocks</button>
+      <button class="sf-btn" data-section="global_markets">Global Markets</button>
+      <button class="sf-btn" data-section="ai_news">AI News</button>
+      <button class="sf-btn" data-section="ai_research_papers">AI Papers</button>
+      <button class="sf-btn" data-section="trending_topics">Trending</button>
+      <button class="sf-btn" data-section="hr_news_india">HR India</button>
+      <button class="sf-btn" data-section="global_hr_news">Global HR</button>
+      <button class="sf-btn" data-section="hr_research_papers">HR Papers</button>
+      <button class="sf-btn" data-section="macroeconomics">Macro</button>
+      <button class="sf-btn" data-section="microeconomics">Micro</button>
+      <button class="sf-btn" data-section="major_updates">Major Updates</button>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <main class="dashboard-main" id="dashboardMain">
+
+    <!-- LOADING STATE -->
+    <div class="state-loading" id="stateLoading">
+      <div class="spinner"></div>
+      <p>Loading intelligence…</p>
+    </div>
+
+    <!-- EMPTY STATE -->
+    <div class="state-empty" id="stateEmpty" hidden>
+      <div class="empty-icon">📭</div>
+      <h2>No brief published for this date.</h2>
+      <p>Briefs are published daily at 7:00 AM IST. Check back tomorrow.</p>
+      <a href="/brief" class="btn-primary">View latest brief</a>
+    </div>
+
+    <!-- ISSUE CONTENT -->
+    <div id="issueContent" hidden>
+
+      <!-- ISSUE HEADER -->
+      <div class="issue-header" id="issueHeader"></div>
+
+      <!-- DEMO BANNER -->
+      <div class="demo-banner" id="demoBanner" hidden>
+        <span>⚠ Demo mode — connect Supabase to see real intelligence.</span>
+      </div>
+
+      <!-- SECTIONS GRID -->
+      <div class="sections-grid" id="sectionsGrid"></div>
+
+    </div>
+
+  </main>
+
+  <footer class="footer">
+    <p>PeopleOS Brief &copy; 2025 · <a href="/">Puneet Sharma</a> · <a href="/archive">Archive</a></p>
+  </footer>
+
+  <script src="/brief.js"></script>
+</body>
+</html>

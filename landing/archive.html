@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Archive — PeopleOS Brief</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/style.css" />
+  <link rel="stylesheet" href="/brief.css" />
+  <link rel="stylesheet" href="/archive.css" />
+</head>
+<body>
+  <nav class="nav">
+    <a href="/" class="nav-brand">PeopleOS Brief</a>
+    <div class="nav-links">
+      <a href="/brief" class="nav-link">Dashboard</a>
+      <a href="/archive" class="nav-link nav-link--active">Archive</a>
+      <a href="/" class="nav-cta">Subscribe</a>
+    </div>
+  </nav>
+
+  <main class="archive-main">
+    <div class="archive-header">
+      <h1 class="archive-title">Intelligence Archive</h1>
+      <p class="archive-sub">Every issue of PeopleOS Brief, organized by date.</p>
+    </div>
+
+    <div id="archiveLoading" class="state-loading">
+      <div class="spinner"></div>
+      <p>Loading archive…</p>
+    </div>
+
+    <div id="archiveEmpty" class="state-empty" hidden>
+      <div class="empty-icon">📭</div>
+      <h2>No issues published yet.</h2>
+      <p>Issues appear here after the first newsletter is sent.</p>
+      <a href="/" class="btn-primary">Subscribe to get notified</a>
+    </div>
+
+    <div id="archiveList" hidden></div>
+  </main>
+
+  <footer class="footer">
+    <p>PeopleOS Brief &copy; 2025 · <a href="/">Puneet Sharma</a></p>
+  </footer>
+
+  <script src="/archive.js"></script>
+</body>
+</html>

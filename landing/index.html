@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="PeopleOS Brief — 12-section daily executive intelligence on markets, AI, HR, and economics." />
+  <title>PeopleOS Brief — Daily Executive Intelligence Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/style.css" />
+  <link rel="stylesheet" href="/brief.css" />
+</head>
+<body>
+  <!-- NAV -->
+  <nav class="nav">
+    <a href="/" class="nav-brand">PeopleOS Brief</a>
+    <div class="nav-links">
+      <a href="/" class="nav-link nav-link--active">Dashboard</a>
+      <a href="/archive/" class="nav-link">Archive</a>
+      <a href="/admin/" class="nav-link" style="color:var(--text-dim);font-size:0.8rem;">Admin</a>
+      <a href="#subscribe-section" class="nav-cta">Subscribe</a>
+    </div>
+  </nav>
+
+  <!-- DATE BAR -->
+  <div class="date-bar" id="dateBar">
+    <div class="date-bar-inner">
+      <div class="date-chips" id="dateChips"></div>
+      <input type="date" id="datePicker" class="date-picker" title="Jump to date" />
+    </div>
+  </div>
+
+  <!-- SECTION FILTER -->
+  <div class="section-filter" id="sectionFilter">
+    <div class="section-filter-inner">
+      <button class="sf-btn sf-btn--active" data-section="all">All</button>
+      <button class="sf-btn" data-section="india_stock_market">India Stocks</button>
+      <button class="sf-btn" data-section="us_stock_market">US Stocks</button>
+      <button class="sf-btn" data-section="global_markets">Global Markets</button>
+      <button class="sf-btn" data-section="ai_news">AI News</button>
+      <button class="sf-btn" data-section="ai_research_papers">AI Papers</button>
+      <button class="sf-btn" data-section="trending_topics">Trending</button>
+      <button class="sf-btn" data-section="hr_news_india">HR India</button>
+      <button class="sf-btn" data-section="global_hr_news">Global HR</button>
+      <button class="sf-btn" data-section="hr_research_papers">HR Papers</button>
+      <button class="sf-btn" data-section="macroeconomics">Macro</button>
+      <button class="sf-btn" data-section="microeconomics">Micro</button>
+      <button class="sf-btn" data-section="major_updates">Major Updates</button>
+    </div>
+  </div>
+
+  <!-- MAIN DASHBOARD -->
+  <main class="dashboard-main" id="dashboardMain">
+
+    <div class="state-loading" id="stateLoading">
+      <div class="spinner"></div>
+      <p>Loading intelligence…</p>
+    </div>
+
+    <div class="state-empty" id="stateEmpty" hidden>
+      <div class="empty-icon">📭</div>
+      <h2>No brief published for this date.</h2>
+      <p>Briefs are published daily at 7:00 AM IST. Check back tomorrow.</p>
+      <a href="/" class="btn-primary">View latest brief</a>
+    </div>
+
+    <div id="issueContent" hidden>
+      <div class="issue-header" id="issueHeader"></div>
+      <div class="demo-banner" id="demoBanner" hidden>
+        <span>⚠ Demo mode — real intelligence published daily at 7:00 AM IST.</span>
+      </div>
+      <div class="section-command" id="sectionCommand"></div>
+      <div class="sections-grid" id="sectionsGrid"></div>
+    </div>
+
+  </main>
+
+  <!-- SUBSCRIBE SECTION -->
+  <section id="subscribe-section" style="padding:60px 24px;max-width:560px;margin:0 auto;text-align:center;">
+    <p style="font-size:0.75rem;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:12px;">Daily Digest</p>
+    <h2 style="font-size:1.6rem;font-weight:800;color:var(--white);margin-bottom:10px;letter-spacing:-0.02em;">Want this in your inbox every morning?</h2>
+    <p style="color:var(--text-muted);font-size:0.9rem;margin-bottom:24px;">Get the top 2 updates from each section as a compact premium digest. Free. 7:00 AM IST.</p>
+    <form class="subscribe-form" id="subscribeForm" novalidate>
+      <div class="input-row">
+        <input type="email" id="emailInput" class="email-input" placeholder="your@email.com" autocomplete="email" required />
+        <button type="submit" class="btn-subscribe" id="submitBtn">
+          <span id="btnText">Subscribe free</span>
+          <span id="btnLoader" class="loader" hidden></span>
+        </button>
+      </div>
+      <div id="formMessage" class="form-message" aria-live="polite"></div>
+    </form>
+    <p style="font-size:0.75rem;color:var(--text-dim);margin-top:12px;">No spam. No noise. Unsubscribe anytime.</p>
+  </section>
+
+  <footer class="footer">
+    <p>PeopleOS Brief &copy; 2026 · Puneet Sharma ·
+      <a href="/">Dashboard</a> ·
+      <a href="/archive/">Archive</a> ·
+      <a href="/admin/" style="color:var(--text-dim);">Admin</a>
+    </p>
+  </footer>
+
+  <script src="/dashboard.js"></script>
+  <script src="/subscribe.js"></script>
+</body>
+</html>
