@@ -48,3 +48,8 @@ def handler(request, response=None):
 
     # Return the token as session — admin stores in sessionStorage and sends as Bearer
     return _json({"ok": True, "session": token, "message": "Authenticated"})
+
+
+# Vercel Python runtime needs a top-level 'app', 'application', or 'handler'.
+app = handler
+application = handler
