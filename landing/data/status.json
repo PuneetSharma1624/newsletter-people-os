@@ -1,8 +1,8 @@
 {
-  "current_date": null,
-  "status": "not_started",
+  "current_date": "2026-05-31",
+  "status": "complete",
   "last_started_at": null,
-  "last_completed_at": null,
+  "last_completed_at": "2026-05-31T05:28:29.754855Z",
   "last_error": null,
-  "sections_complete": 0
+  "sections_complete": 12
 }
