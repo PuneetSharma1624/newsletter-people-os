@@ -114,7 +114,7 @@ Issue JSON structure:
 
 ---
 
-## 5b. Section Filtering
+## 5b. Section Filtering & Navigation
 
 Dashboard supports URL-based section filtering:
 
@@ -127,12 +127,16 @@ Dashboard supports URL-based section filtering:
 /?date=2026-05-30&section=ai_research_papers
 ```
 
-**Behavior:**
-- Section Command Center (12 large clickable cards) renders between issue header and article feed
-- Clicking a section card → filters to that section only, updates URL `?section=`
-- "All Sections" button → shows all 12 sections, removes `?section=` from URL
-- Slim filter bar below date bar also works as secondary navigation
-- Active section card is highlighted with its category color
+**Behavior (updated May 2026):**
+- Section Command Center (12 bento-grid cards) renders between issue header and article feed
+- Clicking a section card → filters to that section, updates URL `?section=`, **scrolls directly to that section's feed**
+- Selected Section Banner appears between command center and article panel showing: section code, name, description, category, update count, and "← All Sections" button
+- "All Sections" button (command center or banner) → shows all 12 sections, removes `?section=` from URL, hides banner
+- Slim filter bar below date bar also works as secondary navigation (also triggers scroll)
+- On page load with `?section=`, after data loads and renders, auto-scrolls to selected section
+- Unknown section IDs gracefully fall back to all-sections mode
+- Each article panel `div` has `id="section-{section_id}"` for direct anchor targeting
+- `scroll-margin-top: 170px` on `.section-card` accounts for sticky nav + date bar + filter bar
 
 **Section IDs → category colors:**
 | Section ID | Code | Category | Color |
@@ -381,6 +385,57 @@ Options: 90 days (lightweight MVP), 180 days (recommended), 365 days (deep archi
 
 ---
 
+## 15b. Source Link Integrity
+
+Every article card links to the **exact article URL** from the Tavily search result — never the publisher homepage.
+
+**How it works:**
+1. `searcher.py` assigns each candidate a `source_id` (e.g. `S1-003`) and stores the exact `source_url`
+2. `generator.py` passes only `source_id` to Groq — never asks Groq for a URL
+3. After Groq responds, Python maps `source_id` → original `source_url` from the candidate list
+4. Static JSON stores the exact URL; dashboard renders `item.source_url` as the `<a href>`
+
+**Groq never writes URLs.** This prevents hallucinated homepage links.
+
+**Audit command:**
+```bash
+python newsletter/main.py --audit-links
+```
+Scans all `landing/data/issues/*.json` and reports any homepage or missing URLs.
+
+**URL validation functions** in `newsletter/utils.py`:
+- `is_probably_homepage_url(url)` — flags bare domains and single-segment paths
+- `validate_article_url(url)` — returns `{"is_valid_article_url": bool, "reason": str}`
+
+**Tests:** `tests/test_source_links.py` — 24 tests covering URL validation, demo data integrity, dashboard.js uses `source_url`, renderer.py uses `source_url`.
+
+---
+
+## 15c. Vercel Python Entrypoint
+
+All files in `api/` that Vercel invokes as serverless functions must expose a top-level `handler`, `app`, or `application` name.
+
+Every handler file ends with:
+```python
+app = handler
+application = handler
+```
+
+**Files patched:**
+- `api/subscribe.py`
+- `api/unsubscribe.py`
+- `api/admin_login.py`
+- `api/admin_status.py`
+- `api/admin_trigger.py`
+- `api/archive_list.py`
+- `api/dates.py`
+- `api/issue.py`
+- `api/latest_brief.py`
+
+`api/demo_data.py` is a data module — not a serverless function, no handler needed.
+
+---
+
 ## 16. Troubleshooting
 
 **`/brief` returns 404 locally**
@@ -417,6 +472,61 @@ Supabase misconfigured. Run schema.sql, verify URL/key, rerun `--send-live`.
 6. Real-time updates intentionally avoided for MVP stability.
 
 ---
+
+## 18b. Design System (May 2026 Premium Redesign)
+
+**Direction:** Linear-inspired premium AI command center. Vercel/Geist-level typography. Dark SaaS, executive, boardroom-ready.
+
+**CSS files:**
+- `style.css` — design system tokens (CSS variables), shared nav, buttons, subscribe form, footer
+- `brief.css` — dashboard-specific: date bar, section command, section panels, article cards, banners
+- `archive.css` — archive page styles
+
+**Key CSS variables:**
+```css
+--bg-base: #080c15        /* deepest background */
+--bg-elevated: #141b2d    /* cards, panels */
+--accent: #6366f1         /* indigo primary */
+--border-subtle: rgba(255,255,255,0.05)
+--border-default: rgba(255,255,255,0.09)
+```
+
+**Category color system:**
+- Markets (S1–S3): `#3b82f6` blue
+- AI (S4–S5): `#a855f7` purple
+- Trending (S6): `#f59e0b` amber
+- HR (S7–S9): `#10b981` emerald
+- Economics (S10–S11): `#f97316` orange
+- Major Updates (S12): `#ef4444` red
+
+**Button system:** `.btn-primary`, `.btn-secondary`, `.btn-ghost`, `.btn-danger` — consistent across all pages.
+
+**Body background:** radial indigo gradient glow from top (`background-attachment: fixed`).
+
+**Nav:** glass morphism (`backdrop-filter: blur(20px)`, `rgba(8,12,21,0.88)`), height 54px, sticky z-index 300.
+
+**Article cards:** structured insight rows with `.insight-tag.why/lens/action` labels, credibility dot, premium source pill.
+
+**Section command center:** bento grid `repeat(auto-fill, minmax(175px, 1fr))`, category-colored top border per card, active card gets category-colored ring.
+
+**Selected Section Banner (`.selected-section-banner`):** appears between command center and article feed when section active. Shows section code, name, description, category, count, and All Sections button.
+
+**Admin pages:**
+- Login: glass card `var(--bg-elevated)` with accent glow dot, indigo button system
+- Dashboard: control-room style, inline status grid, action buttons, log panel
+
+**Acceptance checklist (verified design direction):**
+- [x] `/` loads premium dark dashboard
+- [x] Clicking section card scrolls directly to that section's feed
+- [x] `?section=` URL param auto-scrolls on load
+- [x] All Sections restores full view
+- [x] Selected section banner shows with correct metadata
+- [x] Archive loads with premium issue cards
+- [x] Admin login is a glass card (no raw HTML feel)
+- [x] Admin dashboard is control-room style
+- [x] Subscribe form follows design system
+- [x] No secrets in frontend JS
+- [x] Mobile-friendly (768px and 480px breakpoints)
 
 ## 18. Exact Next Steps
 

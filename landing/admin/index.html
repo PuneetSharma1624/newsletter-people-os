@@ -5,60 +5,124 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Admin — PeopleOS Brief</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/style.css" />
   <style>
-    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-    :root{--bg:#0a0a0f;--bg2:#111118;--bg3:#1a1a2e;--border:#1e1e2e;--text:#e8e8e8;--muted:#888;--accent:#7c6af7;--white:#fff;--danger:#ef4444;--font:'Inter',sans-serif}
-    body{background:var(--bg);color:var(--text);font-family:var(--font);display:flex;align-items:center;justify-content:center;min-height:100vh;}
-    .box{width:100%;max-width:400px;padding:0 24px;}
-    .brand{font-size:0.8rem;font-weight:800;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px;}
-    h1{font-size:1.5rem;font-weight:800;color:var(--white);margin-bottom:6px;letter-spacing:-0.02em;}
-    .sub{font-size:0.85rem;color:var(--muted);margin-bottom:28px;}
+    body{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:24px;}
+    .login-card{
+      width:100%;max-width:400px;
+      background:var(--bg-elevated);
+      border:1px solid var(--border-default);
+      border-radius:var(--radius-xl);
+      padding:36px 32px;
+      box-shadow:0 24px 64px rgba(0,0,0,0.6);
+    }
+    .login-dot{
+      width:36px;height:36px;border-radius:10px;
+      background:var(--accent-glow);border:1px solid var(--accent-border);
+      display:flex;align-items:center;justify-content:center;
+      margin-bottom:20px;
+    }
+    .login-dot::before{
+      content:'';display:block;width:10px;height:10px;border-radius:50%;
+      background:var(--accent);box-shadow:0 0 10px rgba(99,102,241,0.8);
+    }
+    .login-eyebrow{
+      font-size:0.68rem;font-weight:700;color:var(--accent);
+      text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px;
+    }
+    .login-title{
+      font-size:1.4rem;font-weight:800;color:var(--white);
+      letter-spacing:-0.03em;margin-bottom:6px;
+    }
+    .login-sub{font-size:0.82rem;color:var(--text-muted);margin-bottom:28px;line-height:1.5;}
     .field{margin-bottom:16px;}
-    label{display:block;font-size:0.8rem;font-weight:600;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.05em;}
-    input[type=password]{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--white);font-family:var(--font);font-size:0.95rem;padding:12px 16px;outline:none;transition:border-color 0.2s;}
-    input:focus{border-color:var(--accent);}
-    .btn{width:100%;background:var(--accent);border:none;border-radius:8px;color:var(--white);cursor:pointer;font-family:var(--font);font-size:0.9rem;font-weight:700;padding:13px;transition:background 0.2s;}
-    .btn:hover{background:#9585ff;}
-    .btn:disabled{opacity:0.6;cursor:not-allowed;}
-    .msg{margin-top:12px;font-size:0.875rem;min-height:20px;text-align:center;}
+    .field label{
+      display:block;font-size:0.7rem;font-weight:700;color:var(--text-dim);
+      margin-bottom:6px;text-transform:uppercase;letter-spacing:.06em;
+    }
+    input[type=password]{
+      width:100%;background:var(--bg-card);
+      border:1px solid var(--border-default);border-radius:var(--radius);
+      color:var(--white);font-family:var(--font);font-size:0.9rem;
+      padding:12px 14px;outline:none;transition:border-color .2s,box-shadow .2s;
+    }
+    input[type=password]:focus{
+      border-color:var(--accent);box-shadow:0 0 0 3px rgba(99,102,241,0.12);
+    }
+    .login-btn{
+      width:100%;background:var(--accent);border:none;border-radius:var(--radius);
+      color:var(--white);cursor:pointer;font-family:var(--font);
+      font-size:0.875rem;font-weight:700;letter-spacing:-0.01em;
+      padding:13px;transition:background .15s,transform .1s;margin-top:4px;
+    }
+    .login-btn:hover{background:var(--accent-hover);transform:translateY(-1px);}
+    .login-btn:disabled{opacity:.5;cursor:not-allowed;transform:none;}
+    .msg{margin-top:12px;font-size:0.82rem;min-height:20px;text-align:center;line-height:1.4;}
     .msg.error{color:var(--danger);}
-    .back{margin-top:20px;text-align:center;font-size:0.8rem;}
-    .back a{color:var(--muted);text-decoration:none;}
-    .back a:hover{color:var(--white);}
-    .security-note{margin-top:24px;padding:12px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;font-size:0.75rem;color:var(--muted);line-height:1.5;}
+    .msg.success{color:var(--success);}
+    .login-footer{
+      margin-top:24px;padding-top:20px;
+      border-top:1px solid var(--border-subtle);
+      display:flex;align-items:center;justify-content:space-between;
+    }
+    .login-footer a{
+      font-size:0.75rem;color:var(--text-dim);text-decoration:none;transition:color .15s;
+    }
+    .login-footer a:hover{color:var(--text-muted);}
+    .security-badge{
+      font-size:0.68rem;color:var(--text-dim);
+      display:flex;align-items:center;gap:4px;
+    }
+    .security-badge::before{
+      content:'🔒';font-size:0.7rem;
+    }
+    .dev-warn{
+      margin-top:16px;padding:12px 14px;
+      background:rgba(239,68,68,0.06);
+      border:1px solid rgba(239,68,68,0.15);
+      border-radius:var(--radius);
+      font-size:0.72rem;color:rgba(239,68,68,0.8);line-height:1.55;
+    }
+    .dev-warn code{
+      background:rgba(239,68,68,0.1);padding:1px 5px;border-radius:3px;
+      font-family:monospace;
+    }
   </style>
 </head>
 <body>
-  <div class="box">
-    <div class="brand">PeopleOS Brief</div>
-    <h1>Admin Login</h1>
-    <p class="sub">Enter your admin access token to continue.</p>
+  <div class="login-card">
+    <div class="login-dot"></div>
+    <div class="login-eyebrow">PeopleOS Brief</div>
+    <h1 class="login-title">Admin Access</h1>
+    <p class="login-sub">Enter your admin token to access the control panel.</p>
+
     <form id="loginForm">
       <div class="field">
         <label for="tokenInput">Admin Token</label>
         <input type="password" id="tokenInput" placeholder="••••••••••••••••" autocomplete="current-password" required />
       </div>
-      <button type="submit" class="btn" id="loginBtn">Login</button>
+      <button type="submit" class="login-btn" id="loginBtn">Authenticate</button>
       <p class="msg" id="msg"></p>
     </form>
-    <div class="security-note">
-      This page is for authorized admin access only. Guest visitors use the public dashboard at <a href="/" style="color:var(--accent)">PeopleOS Brief</a>.
+
+    <div class="login-footer">
+      <a href="/">← Back to Dashboard</a>
+      <span class="security-badge">Authorized access only</span>
     </div>
-    <div class="back"><a href="/">← Back to Dashboard</a></div>
   </div>
+
   <script>
-    // Local static server cannot execute /api functions — show warning
+    // Local static server warning
     if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
       const port = location.port;
-      // vercel dev uses port 3000; python -m http.server typically uses other ports
       if (port !== '3000' && port !== '') {
-        const warn = document.createElement('div');
-        warn.style.cssText = 'margin-top:16px;padding:12px;background:#1a0a0a;border:1px solid #7f1d1d;border-radius:8px;font-size:0.75rem;color:#fca5a5;line-height:1.6;';
-        warn.innerHTML = '<strong>Local dev warning:</strong> Admin API cannot run on a static file server.<br>'
-          + 'Login will fail (HTTP 501/404). Use <code style="background:#2a0a0a;padding:1px 4px;border-radius:3px;">vercel dev</code> on port 3000 to test admin login locally.<br>'
-          + '<em>Static server (<code>python -m http.server</code>) only works for public dashboard — not admin API.</em>';
-        document.querySelector('.box').appendChild(warn);
+        const w = document.createElement('div');
+        w.className = 'dev-warn';
+        w.innerHTML = '<strong>Local dev:</strong> Admin API unavailable on static server.<br>'
+          + 'Use <code>vercel dev</code> (port 3000) to test login. '
+          + '<code>python -m http.server</code> only serves static files.';
+        document.querySelector('.login-card').appendChild(w);
       }
     }
   </script>

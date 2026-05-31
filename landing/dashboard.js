@@ -23,11 +23,16 @@
 
   const CAT_COLOR = {
     markets: '#3b82f6',
-    ai:      '#8b5cf6',
+    ai:      '#a855f7',
     trending:'#f59e0b',
-    hr:      '#22c55e',
+    hr:      '#10b981',
     econ:    '#f97316',
     major:   '#ef4444',
+  };
+
+  const CAT_LABEL = {
+    markets:'Markets', ai:'AI', trending:'Trending',
+    hr:'Human Capital', econ:'Economics', major:'Major Updates',
   };
 
   let currentDate = null;
@@ -88,52 +93,65 @@
   }
 
   // ─── STATES ─────────────────────────────────────────────
-  // Use both hidden attribute AND style.display — CSS display:flex can override hidden alone.
   function showLoading() {
     const l = document.getElementById('stateLoading');
     const e = document.getElementById('stateEmpty');
     const c = document.getElementById('issueContent');
-    if (l) { l.hidden = false; l.style.display = 'flex'; }
-    if (e) { e.hidden = true;  e.style.display = 'none'; }
-    if (c) { c.hidden = true;  c.style.display = 'none'; }
+    if (l) { l.hidden=false; l.style.display='flex'; }
+    if (e) { e.hidden=true;  e.style.display='none'; }
+    if (c) { c.hidden=true;  c.style.display='none'; }
   }
   function showEmpty() {
     const l = document.getElementById('stateLoading');
     const e = document.getElementById('stateEmpty');
     const c = document.getElementById('issueContent');
-    if (l) { l.hidden = true;  l.style.display = 'none'; }
-    if (e) { e.hidden = false; e.style.display = ''; }
-    if (c) { c.hidden = true;  c.style.display = 'none'; }
+    if (l) { l.hidden=true;  l.style.display='none'; }
+    if (e) { e.hidden=false; e.style.display=''; }
+    if (c) { c.hidden=true;  c.style.display='none'; }
   }
 
   // ─── RENDER ISSUE ────────────────────────────────────────
   function renderIssue(issue) {
-    // Explicitly clear spinner via both hidden + style — CSS flex overrides hidden alone
     const l = document.getElementById('stateLoading');
     const e = document.getElementById('stateEmpty');
     const c = document.getElementById('issueContent');
-    if (l) { l.hidden = true;  l.style.display = 'none'; }
-    if (e) { e.hidden = true;  e.style.display = 'none'; }
-    if (c) { c.hidden = false; c.style.display = ''; }
+    if (l) { l.hidden=true;  l.style.display='none'; }
+    if (e) { e.hidden=true;  e.style.display='none'; }
+    if (c) { c.hidden=false; c.style.display=''; }
 
-    // Hide demo banner for real issues (_demo not set) or when full 72-item data present
-    const isDemo = issue._demo === true && (issue.total_dashboard_items || 0) < 60;
+    const isDemo = issue._demo===true && (issue.total_dashboard_items||0) < 60;
     const banner = document.getElementById('demoBanner');
-    if (banner) { banner.hidden = !isDemo; banner.style.display = !isDemo ? 'none' : ''; }
+    if (banner) { banner.hidden=!isDemo; banner.style.display=!isDemo?'none':''; }
 
-    const totalItems = issue.total_dashboard_items||0;
+    const totalItems    = issue.total_dashboard_items||0;
     const totalSections = issue.total_sections||12;
-    const emailItems = issue.total_email_items||24;
+    const emailItems    = issue.total_email_items||24;
 
     document.getElementById('issueHeader').innerHTML =
       `<div class="issue-date-badge">${fmtDate(issue.issue_date)}</div>` +
-      `<h1 class="issue-subject">${esc(issue.title||issue.subject||'')}</h1>` +
+      `<h1 class="issue-subject">${esc(issue.title||issue.subject||'PeopleOS Brief')}</h1>` +
       (issue.executive_summary ? `<p class="executive-summary">${esc(issue.executive_summary)}</p>` : '') +
       `<div class="kpi-strip">` +
-        `<div class="kpi-card"><div class="kpi-val">${totalSections}</div><div class="kpi-label">Sections</div></div>` +
-        `<div class="kpi-card"><div class="kpi-val">${totalItems}</div><div class="kpi-label">Dashboard Items</div></div>` +
-        `<div class="kpi-card"><div class="kpi-val">${emailItems}</div><div class="kpi-label">Email Items</div></div>` +
-        `<div class="kpi-card"><div class="kpi-val">${issue.issue_date||''}</div><div class="kpi-label">Issue Date</div></div>` +
+        `<div class="kpi-card">` +
+          `<div class="kpi-val">${totalSections}</div>` +
+          `<div class="kpi-label">Intelligence Sections</div>` +
+          `<div class="kpi-micro">Markets · AI · HR · Econ</div>` +
+        `</div>` +
+        `<div class="kpi-card">` +
+          `<div class="kpi-val">${totalItems}</div>` +
+          `<div class="kpi-label">Dashboard Signals</div>` +
+          `<div class="kpi-micro">Full briefing across all sections</div>` +
+        `</div>` +
+        `<div class="kpi-card">` +
+          `<div class="kpi-val">${emailItems}</div>` +
+          `<div class="kpi-label">Email Digest Items</div>` +
+          `<div class="kpi-micro">Top 2 per section · Morning cut</div>` +
+        `</div>` +
+        `<div class="kpi-card">` +
+          `<div class="kpi-val">${issue.issue_date||'—'}</div>` +
+          `<div class="kpi-label">Issue Date</div>` +
+          `<div class="kpi-micro">Daily · 7:00 AM IST</div>` +
+        `</div>` +
       `</div>`;
 
     renderSectionCommand(issue);
@@ -141,12 +159,10 @@
     const grid = document.getElementById('sectionsGrid');
     grid.innerHTML = '';
     (issue.sections||[]).forEach(section => {
-      try {
-        grid.appendChild(renderSectionCard(section));
-      } catch (err) {
-        console.error('Section render error:', section.code, err);
-      }
+      try { grid.appendChild(renderSectionCard(section)); }
+      catch(err) { console.error('Section render error:', section.code, err); }
     });
+
     applySectionFilter(activeSection);
   }
 
@@ -156,23 +172,24 @@
     if (!el) return;
 
     const sectionCountMap = {};
-    (issue.sections||[]).forEach(s => { sectionCountMap[s.section_id] = (s.items||[]).length; });
+    (issue.sections||[]).forEach(s => { sectionCountMap[s.section_id]=(s.items||[]).length; });
 
     el.innerHTML =
       `<div class="sc-header">` +
-        `<h2 class="sc-title">Intelligence Sections</h2>` +
-        `<p class="sc-sub">Jump directly into markets, AI, HR, research, economics, or major updates.</p>` +
+        `<div class="sc-title-block">` +
+          `<h2 class="sc-title">Intelligence Sections</h2>` +
+          `<p class="sc-sub">Select a section to jump directly into its feed.</p>` +
+        `</div>` +
         `<button class="sc-all-btn ${activeSection==='all'?'sc-all-btn--active':''}" id="scAllBtn">All Sections</button>` +
       `</div>` +
       `<div class="sc-grid">` +
         Object.entries(SECTION_META).map(([sid, m]) => {
-          const count = sectionCountMap[sid] || 0;
-          const color = CAT_COLOR[m.cat] || '#7c6af7';
-          const isActive = activeSection === sid;
-          return `<button class="sc-card ${isActive?'sc-card--active':''}" data-section="${sid}" data-color="${color}" style="--sc-color:${color}">` +
+          const count = sectionCountMap[sid]||0;
+          const color = CAT_COLOR[m.cat]||'#6366f1';
+          const isActive = activeSection===sid;
+          return `<button class="sc-card ${isActive?'sc-card--active':''}" data-section="${sid}" style="--sc-color:${color}">` +
             `<div class="sc-card-top">` +
-              `<span class="sc-code">${m.code}</span>` +
-              `<span class="sc-icon">${m.icon}</span>` +
+              `<span class="sc-code" style="color:${color};border-color:${color}30;background:${color}12">${m.code}</span>` +
             `</div>` +
             `<div class="sc-name">${m.name}</div>` +
             `<div class="sc-count">${count} updates</div>` +
@@ -184,17 +201,13 @@
     el.querySelectorAll('.sc-card').forEach(btn => {
       btn.addEventListener('click', () => {
         const sid = btn.dataset.section;
-        applySectionFilter(sid);
+        applySectionFilter(sid, true);
         setURLParams({date:currentDate, section:sid});
-        el.querySelectorAll('.sc-card').forEach(b => b.classList.toggle('sc-card--active', b.dataset.section===sid));
-        document.getElementById('scAllBtn').classList.remove('sc-all-btn--active');
       });
     });
     document.getElementById('scAllBtn').addEventListener('click', () => {
       applySectionFilter('all');
       setURLParams({date:currentDate, section:null});
-      el.querySelectorAll('.sc-card').forEach(b => b.classList.remove('sc-card--active'));
-      document.getElementById('scAllBtn').classList.add('sc-all-btn--active');
     });
   }
 
@@ -202,53 +215,64 @@
   function renderSectionCard(section) {
     const card = document.createElement('div');
     card.className = 'section-card';
+    card.id = 'section-' + section.section_id;
     card.dataset.section = section.section_id;
 
-    const meta = SECTION_META[section.section_id] || {};
-    const color = CAT_COLOR[meta.cat] || '#7c6af7';
-    const items = section.items || [];
-    const sourceCount = items.filter(i => i.source_url && i.source_url !== '#').length;
-    const itemsHtml = items.map(item => renderItem(item)).join('');
+    const meta    = SECTION_META[section.section_id]||{};
+    const color   = CAT_COLOR[meta.cat]||'#6366f1';
+    const catLabel= CAT_LABEL[meta.cat]||'';
+    const items   = section.items||[];
+    const sourceCount = items.filter(i=>i.source_url&&i.source_url!=='#').length;
+
+    card.style.setProperty('--sc-color', color);
 
     card.innerHTML =
-      `<div class="section-card-header" style="border-left:3px solid ${color}">` +
+      `<div class="section-card-header">` +
         `<div class="section-card-top">` +
-          `<div>` +
-            `<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">` +
-              `<span class="section-code-badge" style="color:${color};border-color:${color}20;background:${color}12">${esc(section.code||'')}</span>` +
-              `<span class="section-name-text">${esc(section.section_name)}</span>` +
-              `<span class="section-icon-label">${meta.icon||''}</span>` +
-            `</div>` +
-            `<p class="section-summary-text">${esc(section.section_summary||'')}</p>` +
+          `<div class="section-card-title-group">` +
+            `<span class="section-code-badge" style="color:${color};border-color:${color}30;background:${color}12">${esc(section.code||meta.code||'')}</span>` +
+            `<span class="section-name-text">${esc(section.section_name||meta.name||'')}</span>` +
           `</div>` +
-          `<div class="section-card-stats">` +
-            `<span class="sc-stat">${items.length} updates</span>` +
-            `<span class="sc-stat sc-stat--dim">${sourceCount} sources</span>` +
+          `<div class="section-card-right">` +
+            `<span class="section-cat-pill" style="--cat-color:${color}">${catLabel}</span>` +
+            `<span class="section-stats">${items.length} updates · ${sourceCount} sources</span>` +
           `</div>` +
         `</div>` +
+        (section.section_summary ? `<p class="section-summary-text">${esc(section.section_summary)}</p>` : '') +
       `</div>` +
-      `<div class="section-items">${itemsHtml}</div>`;
+      `<div class="section-items">${items.map(item=>renderItem(item)).join('')}</div>`;
+
     return card;
   }
 
+  // ─── ITEM (article card) ─────────────────────────────────
   function renderItem(item) {
-    const score = item.credibility_score||5;
-    const sourceUrl = item.source_url||'#';
-    const sourceName = item.source_name||item.source_domain||'';
-    const credDot = `<span class="credibility-dot ${credClass(score)}" title="Credibility: ${score}/10"></span>`;
-    const pubDate = item.published_date&&item.published_date!=='unknown'
-      ? `<span style="font-size:0.7rem;color:var(--text-dim);margin-left:6px;">${item.published_date}</span>` : '';
+    const score   = item.credibility_score||5;
+    const scoreClass = credClass(score);
+    const sourceUrl  = item.source_url||'#';
+    const sourceName = esc(item.source_name||item.source_domain||'');
+    const pubDate    = item.published_date&&item.published_date!=='unknown' ? item.published_date : '';
+
+    const insights = [
+      item.why_it_matters ? `<div class="insight-row"><span class="insight-tag why">WHY</span><span class="insight-body">${esc(item.why_it_matters)}</span></div>` : '',
+      item.peopleos_lens  ? `<div class="insight-row"><span class="insight-tag lens">LENS</span><span class="insight-body">${esc(item.peopleos_lens)}</span></div>` : '',
+      item.action         ? `<div class="insight-row"><span class="insight-tag action">ACT</span><span class="insight-body">${esc(item.action)}</span></div>` : '',
+    ].filter(Boolean).join('');
 
     return `<div class="story-item">` +
-      `<div class="story-rank">#${item.rank}</div>` +
+      `<div class="story-top">` +
+        `<span class="story-rank">#${item.rank}</span>` +
+        `<span class="cred-dot ${scoreClass}" title="Credibility: ${score}/10"></span>` +
+      `</div>` +
       `<p class="story-headline">${esc(item.headline)}</p>` +
       `<p class="story-summary">${esc(item.summary||'')}</p>` +
-      `<div class="story-meta">` +
-        (item.why_it_matters?`<div class="story-meta-row"><span class="meta-label meta-label--why">Why it matters</span><span class="meta-text">${esc(item.why_it_matters)}</span></div>`:'') +
-        (item.peopleos_lens?`<div class="story-meta-row"><span class="meta-label meta-label--lens">PeopleOS Lens</span><span class="meta-text">${esc(item.peopleos_lens)}</span></div>`:'') +
-        (item.action?`<div class="story-meta-row"><span class="meta-label meta-label--action">Action</span><span class="meta-text">${esc(item.action)}</span></div>`:'') +
+      (insights ? `<div class="story-insights">${insights}</div>` : '') +
+      `<div class="story-footer">` +
+        `<a href="${sourceUrl}" target="_blank" rel="noopener noreferrer" class="source-pill">` +
+          `<span class="source-arrow">↗</span>` +
+          `<span>${sourceName}${pubDate?' · '+pubDate:''}</span>` +
+        `</a>` +
       `</div>` +
-      `<a href="${sourceUrl}" target="_blank" rel="noopener" class="story-source">${credDot} ↗ ${esc(sourceName)}${pubDate}</a>` +
     `</div>`;
   }
 
@@ -265,7 +289,7 @@
       const btn = document.createElement('button');
       const isToday = date===today;
       const isYesterday = date===prevDay(today);
-      btn.className = 'date-chip' + (isToday?' date-chip--today':'') + (date===currentDate?' date-chip--active':'');
+      btn.className = 'date-chip'+(isToday?' date-chip--today':'')+(date===currentDate?' date-chip--active':'');
       btn.textContent = isToday?'Today':isYesterday?'Yesterday':shortDate(date);
       btn.dataset.date = date;
       btn.addEventListener('click', () => loadForDate(date));
@@ -273,21 +297,73 @@
     });
   }
 
-  // ─── SECTION FILTER ─────────────────────────────────────
-  function applySectionFilter(sectionId) {
+  // ─── SECTION FILTER + SCROLL ────────────────────────────
+  function applySectionFilter(sectionId, scroll) {
     activeSection = sectionId;
+
+    // Article panels
     document.querySelectorAll('.section-card').forEach(card => {
       card.classList.toggle('section-card--hidden', sectionId!=='all' && card.dataset.section!==sectionId);
     });
+
+    // Slim filter bar
     document.querySelectorAll('.sf-btn').forEach(btn => {
       btn.classList.toggle('sf-btn--active', btn.dataset.section===sectionId);
     });
-    // Update slim filter bar active state too
+
+    // Command center card states
     document.querySelectorAll('.sc-card').forEach(b => {
       b.classList.toggle('sc-card--active', b.dataset.section===sectionId);
     });
     const allBtn = document.getElementById('scAllBtn');
     if (allBtn) allBtn.classList.toggle('sc-all-btn--active', sectionId==='all');
+
+    // Selected section banner
+    const banner = document.getElementById('selectedSectionBanner');
+    if (banner) {
+      if (sectionId==='all') {
+        banner.hidden = true;
+        banner.innerHTML = '';
+      } else {
+        const meta  = SECTION_META[sectionId]||{};
+        const color = CAT_COLOR[meta.cat]||'#6366f1';
+        const catLabel = CAT_LABEL[meta.cat]||'';
+        let count = 0;
+        if (currentIssue) {
+          const sec = (currentIssue.sections||[]).find(s=>s.section_id===sectionId);
+          if (sec) count = (sec.items||[]).length;
+        }
+        banner.hidden = false;
+        banner.style.setProperty('--ssb-color', color);
+        banner.innerHTML =
+          `<div class="ssb-inner">` +
+            `<div class="ssb-left">` +
+              `<span class="ssb-code" style="color:${color}">${meta.code||''}</span>` +
+              `<div>` +
+                `<div class="ssb-name">${meta.name||sectionId}</div>` +
+                `<div class="ssb-desc">${meta.desc||''}</div>` +
+              `</div>` +
+            `</div>` +
+            `<div class="ssb-right">` +
+              `<span class="ssb-cat" style="color:${color}">${catLabel}</span>` +
+              `<span class="ssb-count">${count} updates</span>` +
+              `<button class="ssb-all-btn" id="ssbAllBtn">← All Sections</button>` +
+            `</div>` +
+          `</div>`;
+        document.getElementById('ssbAllBtn')?.addEventListener('click', () => {
+          applySectionFilter('all');
+          setURLParams({date:currentDate, section:null});
+        });
+      }
+    }
+
+    // Scroll to section content
+    if (scroll && sectionId!=='all') {
+      requestAnimationFrame(() => {
+        const target = document.getElementById('selectedSectionBanner') || document.getElementById('section-'+sectionId);
+        if (target) target.scrollIntoView({behavior:'smooth', block:'start'});
+      });
+    }
   }
 
   // ─── INIT ────────────────────────────────────────────────
@@ -298,7 +374,7 @@
     document.querySelectorAll('.sf-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         const sid = btn.dataset.section;
-        applySectionFilter(sid);
+        applySectionFilter(sid, true);
         setURLParams({date:currentDate, section:sid==='all'?null:sid});
       });
     });
@@ -306,15 +382,24 @@
     availableDates = await fetchDates();
     renderDateChips();
 
-    // Read URL params
     const urlSection = getURLParam('section');
-    if (urlSection) activeSection = urlSection;
+    if (urlSection && urlSection!=='all') activeSection = urlSection;
 
     const urlDate = getURLParam('date');
     if (urlDate) {
       await loadForDate(urlDate);
     } else {
       await loadLatest();
+    }
+
+    // Scroll to section if loaded from URL param
+    if (urlSection && urlSection!=='all') {
+      setTimeout(() => {
+        const banner = document.getElementById('selectedSectionBanner');
+        const card   = document.getElementById('section-'+urlSection);
+        const target = (banner && !banner.hidden) ? banner : card;
+        if (target) target.scrollIntoView({behavior:'smooth', block:'start'});
+      }, 200);
     }
   }
 

@@ -1,109 +1,79 @@
 /* PeopleOS Brief — Archive page styles */
-.archive-main {
-  max-width: 780px;
-  margin: 0 auto;
-  padding: 48px 32px 80px;
+.archive-main{
+  max-width:780px;margin:0 auto;padding:48px 32px 80px;
 }
 
-.archive-header {
-  margin-bottom: 40px;
-  padding-bottom: 28px;
-  border-bottom: 1px solid var(--border);
+.archive-header{
+  margin-bottom:40px;padding-bottom:28px;
+  border-bottom:1px solid var(--border-subtle);
 }
 
-.archive-title {
-  font-size: 2rem;
-  font-weight: 800;
-  color: var(--white);
-  letter-spacing: -0.02em;
-  margin-bottom: 8px;
+.archive-title{
+  font-size:1.9rem;font-weight:800;color:var(--white);
+  letter-spacing:-0.04em;margin-bottom:8px;
 }
 
-.archive-sub {
-  font-size: 0.95rem;
-  color: var(--text-muted);
-}
+.archive-sub{font-size:0.9rem;color:var(--text-muted);}
 
 /* MONTH GROUP */
-.archive-month {
-  margin-bottom: 36px;
-}
-
-.month-label {
-  font-size: 0.75rem;
-  font-weight: 700;
-  color: var(--text-dim);
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  margin-bottom: 12px;
+.archive-month{margin-bottom:36px;}
+.month-label{
+  font-size:0.68rem;font-weight:700;color:var(--text-dim);
+  text-transform:uppercase;letter-spacing:.1em;margin-bottom:12px;
 }
 
 /* ISSUE ROW */
-.archive-issue {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 18px 20px;
-  background: var(--bg2);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  margin-bottom: 8px;
-  text-decoration: none;
-  transition: border-color 0.15s;
+.archive-issue{
+  display:flex;align-items:center;justify-content:space-between;
+  gap:16px;padding:18px 20px;
+  background:var(--bg-elevated);border:1px solid var(--border-subtle);
+  border-left:3px solid var(--accent-border);
+  border-radius:var(--radius-lg);margin-bottom:8px;
+  text-decoration:none;transition:all .15s;
 }
-.archive-issue:hover { border-color: #2d2b55; }
-
-.archive-issue-left { flex: 1; min-width: 0; }
-.archive-issue-date {
-  font-size: 0.8rem;
-  color: var(--accent);
-  font-weight: 600;
-  margin-bottom: 4px;
-}
-.archive-issue-subject {
-  font-size: 0.95rem;
-  font-weight: 600;
-  color: var(--white);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  margin-bottom: 3px;
-}
-.archive-issue-preheader {
-  font-size: 0.8rem;
-  color: var(--text-muted);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.archive-issue-meta {
-  font-size: 0.75rem;
-  color: var(--text-dim);
-  white-space: nowrap;
+.archive-issue:hover{
+  border-color:var(--border-default);border-left-color:var(--accent);
+  background:var(--bg-card);
 }
 
-.read-brief-btn {
-  background: var(--bg3);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  color: var(--text-muted);
-  font-family: var(--font);
-  font-size: 0.8rem;
-  font-weight: 500;
-  padding: 7px 14px;
-  text-decoration: none;
-  white-space: nowrap;
-  flex-shrink: 0;
-  transition: all 0.15s;
-}
-.read-brief-btn:hover {
-  border-color: var(--accent);
-  color: var(--accent);
+.archive-issue-left{flex:1;min-width:0;}
+
+.archive-issue-date{
+  font-size:0.68rem;font-weight:700;color:var(--accent);
+  text-transform:uppercase;letter-spacing:.08em;margin-bottom:5px;
 }
 
-@media (max-width: 600px) {
-  .archive-main { padding: 28px 16px 60px; }
-  .archive-issue { flex-direction: column; align-items: flex-start; gap: 10px; }
-  .archive-title { font-size: 1.5rem; }
+.archive-issue-subject{
+  font-size:0.9rem;font-weight:700;color:var(--white);
+  letter-spacing:-0.01em;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  margin-bottom:4px;
+}
+
+.archive-issue-preheader{
+  font-size:0.78rem;color:var(--text-muted);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+
+.archive-issue-meta{
+  font-size:0.7rem;color:var(--text-dim);margin-top:5px;
+}
+
+.read-brief-btn{
+  display:inline-flex;align-items:center;gap:6px;
+  background:transparent;border:1px solid var(--border-default);
+  border-radius:var(--radius);color:var(--text-muted);
+  font-family:var(--font);font-size:0.78rem;font-weight:600;
+  padding:7px 14px;text-decoration:none;white-space:nowrap;flex-shrink:0;
+  transition:all .15s;
+}
+.read-brief-btn:hover{border-color:var(--accent-border);color:var(--accent);}
+
+@media(max-width:600px){
+  .archive-main{padding:28px 16px 60px;}
+  .archive-issue{flex-direction:column;align-items:flex-start;gap:10px;}
+  .archive-issue-left{min-width:0;width:100%;}
+  .archive-issue-subject,.archive-issue-preheader{white-space:normal;}
+  .read-brief-btn{width:100%;text-align:center;justify-content:center;}
+  .archive-title{font-size:1.5rem;}
 }

@@ -17,6 +17,7 @@
     <div class="nav-links">
       <a href="/" class="nav-link">Dashboard</a>
       <a href="/archive/" class="nav-link nav-link--active">Archive</a>
+      <a href="/admin/" class="nav-link nav-link--dim">Admin</a>
       <a href="/#subscribe-section" class="nav-cta">Subscribe</a>
     </div>
   </nav>
@@ -24,7 +25,7 @@
   <main class="archive-main">
     <div class="archive-header">
       <h1 class="archive-title">Intelligence Archive</h1>
-      <p class="archive-sub">Every issue of PeopleOS Brief, organized by date.</p>
+      <p class="archive-sub">Every issue of PeopleOS Brief, organized by date. 12 sections · 72 signals per issue.</p>
     </div>
 
     <div id="archiveLoading" class="state-loading">
@@ -42,8 +43,8 @@
     <div id="archiveList" hidden></div>
   </main>
 
-  <footer class="footer">
-    <p>PeopleOS Brief &copy; 2026 · <a href="/">Puneet Sharma</a></p>
+  <footer class="footer" style="max-width:780px;margin:0 auto;padding:24px 32px 36px;">
+    <p>PeopleOS Brief &copy; 2026 · <a href="/">Dashboard</a> · <a href="/admin/" style="color:var(--text-dim);">Admin</a></p>
   </footer>
 
   <script src="/archive.js"></script>

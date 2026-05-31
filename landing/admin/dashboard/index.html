@@ -8,63 +8,179 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/style.css" />
   <style>
-    .admin-wrap{max-width:860px;margin:0 auto;padding:40px 24px 80px;}
-    .admin-header{margin-bottom:32px;padding-bottom:20px;border-bottom:1px solid var(--border);}
-    .admin-title{font-size:1.5rem;font-weight:800;color:var(--white);letter-spacing:-0.02em;}
-    .admin-sub{font-size:0.85rem;color:var(--text-muted);margin-top:4px;}
-    .logout-btn{float:right;background:transparent;border:1px solid var(--border);color:var(--text-dim);cursor:pointer;font-family:var(--font);font-size:0.8rem;padding:6px 14px;border-radius:6px;}
-    .logout-btn:hover{border-color:var(--accent);color:var(--accent);}
-    .status-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin-bottom:32px;}
-    .stat-card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:16px 18px;}
-    .stat-label{font-size:0.7rem;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px;}
-    .stat-value{font-size:1.1rem;font-weight:700;color:var(--white);}
-    .stat-value.ok{color:#22c55e;}
-    .stat-value.warn{color:#f59e0b;}
+    body{background:var(--bg-base);color:var(--text);font-family:var(--font);-webkit-font-smoothing:antialiased;}
+
+    /* NAV */
+    .adm-nav{
+      display:flex;align-items:center;justify-content:space-between;
+      padding:0 32px;height:54px;
+      background:rgba(8,12,21,0.92);
+      backdrop-filter:blur(20px);border-bottom:1px solid var(--border-subtle);
+      position:sticky;top:0;z-index:100;
+    }
+    .adm-brand{
+      font-size:0.875rem;font-weight:700;color:var(--white);
+      text-decoration:none;letter-spacing:-0.02em;
+      display:flex;align-items:center;gap:8px;
+    }
+    .adm-brand::before{
+      content:'';display:inline-block;width:7px;height:7px;border-radius:50%;
+      background:var(--accent);box-shadow:0 0 8px rgba(99,102,241,0.9);
+    }
+    .adm-nav-right{display:flex;align-items:center;gap:10px;}
+    .adm-badge{
+      font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;
+      color:var(--danger);background:rgba(239,68,68,0.1);
+      border:1px solid rgba(239,68,68,0.2);border-radius:999px;padding:3px 10px;
+    }
+
+    /* LAYOUT */
+    .adm-wrap{max-width:900px;margin:0 auto;padding:36px 32px 80px;}
+
+    /* HEADER */
+    .adm-header{margin-bottom:32px;padding-bottom:24px;border-bottom:1px solid var(--border-subtle);}
+    .adm-eyebrow{
+      font-size:0.68rem;font-weight:700;color:var(--text-dim);
+      text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px;
+    }
+    .adm-title{font-size:1.4rem;font-weight:800;color:var(--white);letter-spacing:-0.03em;margin-bottom:4px;}
+    .adm-sub{font-size:0.82rem;color:var(--text-muted);}
+
+    /* SECTION LABEL */
+    .section-label{
+      font-size:0.65rem;font-weight:700;color:var(--text-dim);
+      text-transform:uppercase;letter-spacing:.1em;margin-bottom:12px;
+    }
+
+    /* STATUS GRID */
+    .status-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px;margin-bottom:32px;}
+    .stat-card{
+      background:var(--bg-elevated);border:1px solid var(--border-subtle);
+      border-radius:var(--radius-lg);padding:16px 18px;transition:border-color .15s;
+    }
+    .stat-card:hover{border-color:var(--border-default);}
+    .stat-label{
+      font-size:0.65rem;font-weight:700;color:var(--text-dim);
+      text-transform:uppercase;letter-spacing:.08em;margin-bottom:7px;
+    }
+    .stat-value{font-size:1rem;font-weight:700;color:var(--white);letter-spacing:-0.01em;}
+    .stat-value.ok{color:var(--success);}
+    .stat-value.warn{color:var(--warning);}
     .stat-value.fail{color:var(--danger);}
-    .section-title{font-size:0.75rem;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:14px;}
-    .btn-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin-bottom:32px;}
-    .action-btn{background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);cursor:pointer;font-family:var(--font);font-size:0.875rem;font-weight:600;padding:12px 16px;text-align:left;transition:all 0.15s;}
-    .action-btn:hover{border-color:var(--accent);color:var(--accent);}
-    .action-btn:disabled{opacity:0.5;cursor:not-allowed;}
-    .action-btn.danger:hover{border-color:var(--danger);color:var(--danger);}
-    .action-btn .btn-icon{margin-right:8px;}
-    .log-box{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:16px;font-family:'Courier New',monospace;font-size:0.8rem;color:#88c;max-height:280px;overflow-y:auto;white-space:pre-wrap;line-height:1.6;}
-    .log-line.ok{color:#22c55e;}
+
+    /* GITHUB NOTE */
+    .github-note{
+      background:rgba(99,102,241,0.06);border:1px solid rgba(99,102,241,0.18);
+      border-radius:var(--radius);padding:14px 16px;
+      font-size:0.78rem;color:#818cf8;line-height:1.6;margin-bottom:24px;
+    }
+
+    /* BUTTON GRID */
+    .btn-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px;margin-bottom:32px;}
+    .action-btn{
+      background:var(--bg-elevated);border:1px solid var(--border-subtle);
+      border-radius:var(--radius);color:var(--text-muted);
+      cursor:pointer;font-family:var(--font);font-size:0.82rem;font-weight:600;
+      padding:12px 16px;text-align:left;transition:all .15s;
+      display:flex;align-items:center;gap:8px;
+    }
+    .action-btn:hover{border-color:var(--accent-border);color:var(--accent);}
+    .action-btn:disabled{opacity:.4;cursor:not-allowed;}
+    .action-btn.danger:hover{border-color:rgba(239,68,68,0.4);color:var(--danger);}
+    .action-btn .btn-icon{
+      width:20px;height:20px;border-radius:5px;
+      display:flex;align-items:center;justify-content:center;
+      background:var(--bg-card);font-size:0.75rem;flex-shrink:0;
+    }
+
+    /* LOG BOX */
+    .log-box{
+      background:var(--bg-surface);border:1px solid var(--border-subtle);
+      border-radius:var(--radius-lg);padding:16px;
+      font-family:'Courier New',monospace;font-size:0.78rem;
+      color:var(--text-dim);max-height:300px;overflow-y:auto;
+      white-space:pre-wrap;line-height:1.65;
+    }
+    .log-line.ok{color:var(--success);}
     .log-line.err{color:var(--danger);}
-    .log-line.warn{color:#f59e0b;}
-    .log-line.info{color:#88aacc;}
-    .confirm-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.8);display:none;align-items:center;justify-content:center;z-index:999;}
+    .log-line.warn{color:var(--warning);}
+    .log-line.info{color:#818cf8;}
+
+    /* CONFIRM OVERLAY */
+    .confirm-overlay{
+      position:fixed;inset:0;background:rgba(0,0,0,0.75);
+      display:none;align-items:center;justify-content:center;z-index:999;
+      backdrop-filter:blur(4px);
+    }
     .confirm-overlay.show{display:flex;}
-    .confirm-box{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:28px;max-width:400px;width:90%;}
-    .confirm-box h3{color:var(--white);font-size:1.1rem;margin-bottom:8px;}
-    .confirm-box p{color:var(--text-muted);font-size:0.875rem;margin-bottom:20px;}
+    .confirm-box{
+      background:var(--bg-elevated);border:1px solid var(--border-strong);
+      border-radius:var(--radius-xl);padding:32px;max-width:420px;width:90%;
+      box-shadow:var(--shadow-lg);
+    }
+    .confirm-box h3{color:var(--white);font-size:1.05rem;font-weight:700;letter-spacing:-0.02em;margin-bottom:8px;}
+    .confirm-box p{color:var(--text-muted);font-size:0.84rem;margin-bottom:24px;line-height:1.55;}
     .confirm-btns{display:flex;gap:10px;}
-    .confirm-ok{flex:1;background:var(--danger);border:none;border-radius:6px;color:var(--white);cursor:pointer;font-family:var(--font);font-weight:700;padding:10px;}
-    .confirm-cancel{flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--text-muted);cursor:pointer;font-family:var(--font);font-weight:600;padding:10px;}
-    .github-note{background:rgba(124,106,247,0.08);border:1px solid rgba(124,106,247,0.25);border-radius:8px;padding:14px;font-size:0.8rem;color:#9585ff;line-height:1.6;margin-bottom:24px;}
+    .confirm-ok{
+      flex:1;background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.3);
+      border-radius:var(--radius);color:var(--danger);
+      cursor:pointer;font-family:var(--font);font-weight:700;
+      font-size:0.875rem;padding:11px;transition:all .15s;
+    }
+    .confirm-ok:hover{background:rgba(239,68,68,0.25);}
+    .confirm-cancel{
+      flex:1;background:var(--bg-card);border:1px solid var(--border-default);
+      border-radius:var(--radius);color:var(--text-muted);
+      cursor:pointer;font-family:var(--font);font-weight:600;
+      font-size:0.875rem;padding:11px;transition:all .15s;
+    }
+    .confirm-cancel:hover{border-color:var(--border-strong);color:var(--white);}
+
+    /* LOGOUT */
+    .logout-btn{
+      background:transparent;border:1px solid var(--border-subtle);
+      border-radius:var(--radius);color:var(--text-dim);
+      cursor:pointer;font-family:var(--font);font-size:0.75rem;font-weight:600;
+      padding:5px 12px;transition:all .15s;
+    }
+    .logout-btn:hover{border-color:var(--danger);color:var(--danger);}
+
+    @media(max-width:640px){
+      .adm-nav{padding:0 16px;}
+      .adm-wrap{padding:24px 16px 60px;}
+      .btn-grid{grid-template-columns:1fr 1fr;}
+      .status-grid{grid-template-columns:1fr 1fr;}
+    }
+    @media(max-width:400px){
+      .btn-grid{grid-template-columns:1fr;}
+    }
   </style>
 </head>
 <body>
-<nav class="nav" style="position:sticky;top:0;z-index:100;background:rgba(10,10,10,0.95);">
-  <a href="/" class="nav-brand" style="color:var(--white);text-decoration:none;font-weight:700;font-size:0.9rem;">PeopleOS Brief</a>
-  <div style="display:flex;gap:16px;align-items:center;">
-    <a href="/" style="color:var(--text-muted);text-decoration:none;font-size:0.85rem;">Dashboard</a>
+
+<nav class="adm-nav">
+  <a href="/" class="adm-brand">PeopleOS Brief</a>
+  <div class="adm-nav-right">
+    <span class="adm-badge">Admin</span>
+    <a href="/" style="font-size:0.78rem;color:var(--text-dim);text-decoration:none;padding:5px 10px;border-radius:5px;transition:color .15s;" onmouseover="this.style.color='var(--white)'" onmouseout="this.style.color='var(--text-dim)'">Dashboard</a>
     <button class="logout-btn" onclick="logout()">Logout</button>
   </div>
 </nav>
 
-<div class="admin-wrap">
-  <div class="admin-header">
-    <div style="display:flex;align-items:start;justify-content:space-between;">
+<div class="adm-wrap">
+
+  <div class="adm-header">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;">
       <div>
-        <h1 class="admin-title">Admin Dashboard</h1>
-        <p class="admin-sub">PeopleOS Brief content generation control panel</p>
+        <div class="adm-eyebrow">Control Panel</div>
+        <h1 class="adm-title">Admin Dashboard</h1>
+        <p class="adm-sub">PeopleOS Brief content generation &amp; dispatch control.</p>
       </div>
-      <button onclick="loadStatus()" style="background:transparent;border:1px solid var(--border);color:var(--text-muted);cursor:pointer;font-family:var(--font);font-size:0.8rem;padding:7px 14px;border-radius:6px;">↻ Refresh</button>
+      <button onclick="loadStatus()" style="background:transparent;border:1px solid var(--border-subtle);color:var(--text-dim);cursor:pointer;font-family:var(--font);font-size:0.75rem;font-weight:600;padding:7px 14px;border-radius:var(--radius);transition:all .15s;white-space:nowrap;" onmouseover="this.style.borderColor='var(--border-default)';this.style.color='var(--white)'" onmouseout="this.style.borderColor='var(--border-subtle)';this.style.color='var(--text-dim)'">↻ Refresh</button>
     </div>
   </div>
 
-  <p class="section-title">Current Status</p>
+  <p class="section-label">System Status</p>
   <div class="status-grid" id="statusGrid">
     <div class="stat-card"><div class="stat-label">Today</div><div class="stat-value" id="statToday">—</div></div>
     <div class="stat-card"><div class="stat-label">Today's Issue</div><div class="stat-value" id="statTodayExists">—</div></div>
@@ -75,11 +191,13 @@
   </div>
 
   <div class="github-note" id="githubNote" style="display:none;">
-    ⚡ GitHub Actions dispatch not configured. Buttons will show manual instructions.<br>
-    To configure: add GITHUB_OWNER, GITHUB_REPO, GITHUB_PAT_FOR_WORKFLOW_DISPATCH to your environment.
+    ⚡ GitHub Actions dispatch not configured. Trigger buttons will show manual fallback instructions.<br>
+    Add <code style="background:rgba(99,102,241,0.12);padding:1px 5px;border-radius:3px;">GITHUB_OWNER</code>,
+    <code style="background:rgba(99,102,241,0.12);padding:1px 5px;border-radius:3px;">GITHUB_REPO</code>,
+    <code style="background:rgba(99,102,241,0.12);padding:1px 5px;border-radius:3px;">GITHUB_PAT_FOR_WORKFLOW_DISPATCH</code> to your Vercel env vars.
   </div>
 
-  <p class="section-title">Actions</p>
+  <p class="section-label">Actions</p>
   <div class="btn-grid">
     <button class="action-btn" onclick="trigger('generate_today')"><span class="btn-icon">⚡</span>Generate Today's Brief</button>
     <button class="action-btn" onclick="trigger('generate_today', true)"><span class="btn-icon">🔄</span>Force Regenerate</button>
@@ -90,8 +208,9 @@
     <button class="action-btn" onclick="refreshIndex()"><span class="btn-icon">🗂</span>Refresh Archive Index</button>
   </div>
 
-  <p class="section-title">Activity Log</p>
+  <p class="section-label">Activity Log</p>
   <div class="log-box" id="logBox">Admin dashboard loaded. Ready.</div>
+
 </div>
 
 <div class="confirm-overlay" id="confirmOverlay">
