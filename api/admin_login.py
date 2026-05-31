@@ -1,19 +1,17 @@
 """
-POST /api/admin/login
-Validates admin token against ADMIN_TRIGGER_TOKEN env var OR fallback password.
-IMPORTANT: Remove FALLBACK_PASSWORD and rotate token once env var is confirmed working.
+POST /api/admin/login — PeopleOS Brief admin authentication.
+Vercel Python serverless. Zero non-stdlib imports at module level.
+TODO: Remove _FALLBACK_PASSWORD once ADMIN_TRIGGER_TOKEN env var is confirmed working.
 """
-from __future__ import annotations
-import json, os, sys
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+import json
+import os
 
-# TODO: Remove this fallback once ADMIN_TRIGGER_TOKEN env var is confirmed working on Vercel.
 _FALLBACK_PASSWORD = "PuneetAdmin1234"
 
 _CORS = {
     "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Methods": "POST, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type, Authorization",
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
     "Content-Type": "application/json",
 }
 
@@ -32,37 +30,58 @@ def handler(request, response=None):
         if method != "POST":
             return _resp({"success": False, "error": "Method not allowed"}, 405)
 
-        # Parse body — handle bytes, str, or absent body
-        body_raw = getattr(request, "body", b"") or b""
-        if isinstance(body_raw, str):
-            body_raw = body_raw.encode("utf-8")
-        body_data = json.loads(body_raw) if body_raw.strip() else {}
+        # ── Defensive body extraction — try every known Vercel request shape ──
+        body_data = {}
+        try:
+            if hasattr(request, "get_json") and callable(request.get_json):
+                body_data = request.get_json() or {}
+            elif hasattr(request, "json") and callable(request.json):
+                body_data = request.json() or {}
+            elif hasattr(request, "body"):
+                raw = request.body
+                if raw:
+                    if isinstance(raw, (bytes, bytearray)):
+                        raw = raw.decode("utf-8", errors="replace")
+                    body_data = json.loads(raw) if isinstance(raw, str) and raw.strip() else {}
+            elif hasattr(request, "data"):
+                raw = request.data
+                if isinstance(raw, (bytes, bytearray)):
+                    raw = raw.decode("utf-8", errors="replace")
+                body_data = json.loads(raw) if raw and raw.strip() else {}
+            elif hasattr(request, "read") and callable(request.read):
+                raw = request.read()
+                if isinstance(raw, (bytes, bytearray)):
+                    raw = raw.decode("utf-8", errors="replace")
+                body_data = json.loads(raw) if raw and raw.strip() else {}
+        except Exception:
+            body_data = {}
 
-        # Extract token — accept any of these key variants
-        token = (
+        if not isinstance(body_data, dict):
+            body_data = {}
+
+        # ── Token extraction — accept any key variant ──
+        user_input = str(
             body_data.get("token")
             or body_data.get("password")
             or body_data.get("adminToken")
             or ""
-        )
-        if isinstance(token, str):
-            token = token.strip()
+        ).strip()
 
-        if not token:
+        if not user_input:
             return _resp({"success": False, "error": "Token is required."}, 400)
 
-        # Auth: match fallback OR env var (strip env var to handle hidden quotes)
-        env_token = (os.environ.get("ADMIN_TRIGGER_TOKEN") or "").strip().strip('"').strip("'")
-        authenticated = (token == _FALLBACK_PASSWORD) or (env_token and token == env_token)
+        # ── Auth check: fallback OR env var (strip hidden quotes from env) ──
+        env_token = str(os.environ.get("ADMIN_TRIGGER_TOKEN") or "").strip().strip('"').strip("'")
+        authenticated = (user_input == _FALLBACK_PASSWORD) or (env_token and user_input == env_token)
 
         if not authenticated:
-            return _resp({"success": False, "error": "Invalid access token or password."}, 401)
+            return _resp({"success": False, "ok": False, "error": "Invalid access token or password."}, 401)
 
-        session = env_token if env_token else token
+        session = env_token if env_token else user_input
         return _resp({"success": True, "ok": True, "message": "Authenticated.", "session": session})
 
     except Exception as exc:
-        return _resp({"success": False, "ok": False, "error": str(exc)}, 500)
+        return _resp({"success": False, "ok": False, "error": str(exc), "type": type(exc).__name__}, 500)
 
 
 app = handler
