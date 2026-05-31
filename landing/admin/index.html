@@ -47,6 +47,21 @@
     </div>
     <div class="back"><a href="/">← Back to Dashboard</a></div>
   </div>
+  <script>
+    // Local static server cannot execute /api functions — show warning
+    if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
+      const port = location.port;
+      // vercel dev uses port 3000; python -m http.server typically uses other ports
+      if (port !== '3000' && port !== '') {
+        const warn = document.createElement('div');
+        warn.style.cssText = 'margin-top:16px;padding:12px;background:#1a0a0a;border:1px solid #7f1d1d;border-radius:8px;font-size:0.75rem;color:#fca5a5;line-height:1.6;';
+        warn.innerHTML = '<strong>Local dev warning:</strong> Admin API cannot run on a static file server.<br>'
+          + 'Login will fail (HTTP 501/404). Use <code style="background:#2a0a0a;padding:1px 4px;border-radius:3px;">vercel dev</code> on port 3000 to test admin login locally.<br>'
+          + '<em>Static server (<code>python -m http.server</code>) only works for public dashboard — not admin API.</em>';
+        document.querySelector('.box').appendChild(warn);
+      }
+    }
+  </script>
   <script src="/admin.js"></script>
 </body>
 </html>

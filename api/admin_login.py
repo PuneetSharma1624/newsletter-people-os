@@ -1,88 +1,71 @@
+"""POST /api/admin/login — PeopleOS Brief admin authentication.
+Vercel Python serverless: handler must be a class inheriting BaseHTTPRequestHandler.
 """
-POST /api/admin/login — PeopleOS Brief admin authentication.
-Vercel Python serverless. Zero non-stdlib imports at module level.
-TODO: Remove _FALLBACK_PASSWORD once ADMIN_TRIGGER_TOKEN env var is confirmed working.
-"""
+from http.server import BaseHTTPRequestHandler
 import json
 import os
 
 _FALLBACK_PASSWORD = "PuneetAdmin1234"
 
-_CORS = {
-    "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Headers": "Content-Type, Authorization",
-    "Access-Control-Allow-Methods": "POST, OPTIONS",
-    "Content-Type": "application/json",
-}
 
+class handler(BaseHTTPRequestHandler):
 
-def _resp(body: dict, status: int = 200) -> dict:
-    return {"statusCode": status, "headers": _CORS, "body": json.dumps(body)}
+    def do_OPTIONS(self):
+        self.send_response(200)
+        self._cors()
+        self.end_headers()
 
-
-def handler(request, response=None):
-    try:
-        method = getattr(request, "method", "POST")
-
-        if method == "OPTIONS":
-            return _resp({}, 200)
-
-        if method != "POST":
-            return _resp({"success": False, "error": "Method not allowed"}, 405)
-
-        # ── Defensive body extraction — try every known Vercel request shape ──
-        body_data = {}
+    def do_POST(self):
         try:
-            if hasattr(request, "get_json") and callable(request.get_json):
-                body_data = request.get_json() or {}
-            elif hasattr(request, "json") and callable(request.json):
-                body_data = request.json() or {}
-            elif hasattr(request, "body"):
-                raw = request.body
-                if raw:
-                    if isinstance(raw, (bytes, bytearray)):
-                        raw = raw.decode("utf-8", errors="replace")
-                    body_data = json.loads(raw) if isinstance(raw, str) and raw.strip() else {}
-            elif hasattr(request, "data"):
-                raw = request.data
-                if isinstance(raw, (bytes, bytearray)):
-                    raw = raw.decode("utf-8", errors="replace")
-                body_data = json.loads(raw) if raw and raw.strip() else {}
-            elif hasattr(request, "read") and callable(request.read):
-                raw = request.read()
-                if isinstance(raw, (bytes, bytearray)):
-                    raw = raw.decode("utf-8", errors="replace")
-                body_data = json.loads(raw) if raw and raw.strip() else {}
-        except Exception:
-            body_data = {}
+            length = int(self.headers.get("Content-Length") or 0)
+            raw = self.rfile.read(length) if length > 0 else b""
+            try:
+                body = json.loads(raw) if raw else {}
+            except Exception:
+                body = {}
 
-        if not isinstance(body_data, dict):
-            body_data = {}
+            if not isinstance(body, dict):
+                body = {}
 
-        # ── Token extraction — accept any key variant ──
-        user_input = str(
-            body_data.get("token")
-            or body_data.get("password")
-            or body_data.get("adminToken")
-            or ""
-        ).strip()
+            token_input = str(
+                body.get("token") or body.get("password") or body.get("adminToken") or ""
+            ).strip()
 
-        if not user_input:
-            return _resp({"success": False, "error": "Token is required."}, 400)
+            if not token_input:
+                self._json({"success": False, "ok": False, "error": "Token is required."}, 400)
+                return
 
-        # ── Auth check: fallback OR env var (strip hidden quotes from env) ──
-        env_token = str(os.environ.get("ADMIN_TRIGGER_TOKEN") or "").strip().strip('"').strip("'")
-        authenticated = (user_input == _FALLBACK_PASSWORD) or (env_token and user_input == env_token)
+            env_token = str(os.environ.get("ADMIN_TRIGGER_TOKEN") or "").strip().strip('"').strip("'")
+            if not env_token:
+                self._json({
+                    "success": False, "ok": False,
+                    "error": "ADMIN_TRIGGER_TOKEN is not set on the server. Configure it in Vercel environment variables."
+                }, 503)
+                return
 
-        if not authenticated:
-            return _resp({"success": False, "ok": False, "error": "Invalid access token or password."}, 401)
+            authenticated = (token_input == _FALLBACK_PASSWORD) or (token_input == env_token)
 
-        session = env_token if env_token else user_input
-        return _resp({"success": True, "ok": True, "message": "Authenticated.", "session": session})
+            if not authenticated:
+                self._json({"success": False, "ok": False, "error": "Invalid access token."}, 401)
+                return
 
-    except Exception as exc:
-        return _resp({"success": False, "ok": False, "error": str(exc), "type": type(exc).__name__}, 500)
+            self._json({"success": True, "ok": True, "message": "Authenticated.", "session": env_token})
 
+        except Exception as exc:
+            self._json({"success": False, "ok": False, "error": str(exc), "type": type(exc).__name__}, 500)
 
-app = handler
-application = handler
+    def _cors(self):
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization")
+        self.send_header("Access-Control-Allow-Methods", "POST, OPTIONS")
+
+    def _json(self, body, status=200):
+        payload = json.dumps(body).encode()
+        self.send_response(status)
+        self._cors()
+        self.send_header("Content-Type", "application/json")
+        self.end_headers()
+        self.wfile.write(payload)
+
+    def log_message(self, *args):
+        pass
