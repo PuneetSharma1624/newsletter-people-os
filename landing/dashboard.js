@@ -152,6 +152,16 @@
           `<div class="kpi-label">Issue Date</div>` +
           `<div class="kpi-micro">Daily · 7:00 AM IST</div>` +
         `</div>` +
+        `<div class="kpi-card" id="kpiVisitors">` +
+          `<div class="kpi-val kpi-live" id="kpiVisitorsVal">—</div>` +
+          `<div class="kpi-label">Total Visitors</div>` +
+          `<div class="kpi-micro">Live site visits</div>` +
+        `</div>` +
+        `<div class="kpi-card" id="kpiSubscribers">` +
+          `<div class="kpi-val kpi-live" id="kpiSubscribersVal">—</div>` +
+          `<div class="kpi-label">Subscribers</div>` +
+          `<div class="kpi-micro">Morning brief readers</div>` +
+        `</div>` +
       `</div>`;
 
     renderSectionCommand(issue);
@@ -400,6 +410,25 @@
         const target = (banner && !banner.hidden) ? banner : card;
         if (target) target.scrollIntoView({behavior:'smooth', block:'start'});
       }, 200);
+    }
+
+    // Record visit + update live KPI cards (non-blocking)
+    recordVisit();
+  }
+
+  async function recordVisit() {
+    try {
+      const res = await fetch('/api/analytics/visit', { method: 'POST' });
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data.ok) {
+        const vEl = document.getElementById('kpiVisitorsVal');
+        const sEl = document.getElementById('kpiSubscribersVal');
+        if (vEl && data.total_visits   > 0) vEl.textContent = data.total_visits.toLocaleString();
+        if (sEl && data.total_subscribers >= 0) sEl.textContent = data.total_subscribers.toLocaleString();
+      }
+    } catch (_) {
+      // silent — never block dashboard on analytics failure
     }
   }
 

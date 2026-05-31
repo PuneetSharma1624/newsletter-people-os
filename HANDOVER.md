@@ -473,6 +473,101 @@ Supabase misconfigured. Run schema.sql, verify URL/key, rerun `--send-live`.
 
 ---
 
+## 18c. Analytics & Subscriber Layer (May 2026)
+
+### Architecture
+Visitor and subscriber counts stored in Supabase (stateless Vercel functions can't use memory).
+Public dashboard remains 100% static JSON — API calls are non-blocking and fail gracefully.
+
+### Public API endpoints
+| Endpoint | Method | Auth | Purpose |
+|---|---|---|---|
+| `/api/analytics/visit` | POST | None | Record visit, return aggregate counts |
+| `/api/public/stats` | GET | None | Total visits + subscribers only |
+
+Both return `{ ok, total_visits, total_subscribers }`. Never return emails or PII.
+
+### Admin API endpoints
+| Endpoint | Method | Auth | Purpose |
+|---|---|---|---|
+| `/api/admin/stats` | GET | Bearer token | Detailed visitor + subscriber stats |
+| `/api/admin/notifications` | GET | Bearer token | New subscribers since last admin view |
+| `/api/admin/notifications/mark-seen` | POST | Bearer token | Reset notification badge |
+| `/api/admin/subscribers` | GET | Bearer token | Paginated subscriber list |
+
+Query params for `/api/admin/subscribers`: `status=active|unsubscribed|all`, `since=YYYY-MM-DD`, `limit=200`
+
+All admin endpoints return 401 if missing/wrong token. Return 503 if Supabase not configured.
+
+### Privacy
+- Raw IP addresses never stored
+- Visitor hash = `sha256(user_agent + coarse_date)[:16]` — server-side only
+- Public endpoints return only aggregate counts
+
+### Supabase schema additions (schema.sql v3)
+Run the new migration block in Supabase SQL Editor:
+```sql
+-- New tables:
+-- site_analytics   (visit events, no PII)
+-- admin_notification_state  (single-row bell badge state, id='default')
+
+-- New column on subscribers:
+-- last_email_sent_at TIMESTAMPTZ
+```
+
+Migration is fully idempotent (`CREATE TABLE IF NOT EXISTS`, `ADD COLUMN IF NOT EXISTS`).
+
+### Frontend behavior
+**Dashboard (`dashboard.js`):**
+- On load, `POST /api/analytics/visit` — non-blocking
+- Updates `#kpiVisitorsVal` and `#kpiSubscribersVal` KPI cards
+- Dashboard renders even if API fails (shows `—`)
+
+**Subscribe module (`subscribe.js`):**
+- On load, `GET /api/public/stats` → updates `#readerCountLine`
+- Copy: `"Join N readers getting the executive cut every morning."`
+- After successful subscribe, re-fetches count
+
+**Admin dashboard (`admin.js`):**
+- On load: `loadAdminStats()`, `loadNotifications()`, `loadStatus()`
+- Notification bell shows badge count of new subscribers since last mark-seen
+- Click bell → dropdown with subscriber emails + timestamps
+- "Mark as seen" → `POST /api/admin/notifications/mark-seen` → badge clears
+- Subscribers tab → table with status/source/date filters
+- Tab switching: Overview | Subscribers
+
+### Admin notification state
+`admin_notification_state` table has one row `id='default'`.
+`last_seen_subscriber_at` is updated each time admin clicks "Mark as seen".
+New subscribers = those with `created_at > last_seen_subscriber_at`.
+
+### Local testing
+```bash
+# Static UI only (no API):
+python -m http.server 5124 --directory landing
+
+# Full API testing:
+vercel dev
+
+# Test endpoints:
+curl -X POST http://localhost:3000/api/analytics/visit
+curl http://localhost:3000/api/public/stats
+curl -H "Authorization: Bearer YOUR_TOKEN" http://localhost:3000/api/admin/stats
+curl -H "Authorization: Bearer YOUR_TOKEN" http://localhost:3000/api/admin/subscribers
+curl -H "Authorization: Bearer YOUR_TOKEN" http://localhost:3000/api/admin/notifications
+curl -X POST -H "Authorization: Bearer YOUR_TOKEN" http://localhost:3000/api/admin/notifications/mark-seen
+```
+
+### Deployment checklist
+1. Run schema migration v3 in Supabase SQL Editor
+2. Confirm `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` are in Vercel env vars
+3. Push to GitHub → Vercel redeploys
+4. Visit `/` → check visitor KPI card increments
+5. Subscribe → check reader count updates
+6. Visit `/admin/dashboard/` → check analytics KPI strip
+7. Check notification bell shows new subscriber count
+8. Open Subscribers tab → confirm table loads
+
 ## 18b. Design System (May 2026 Premium Redesign)
 
 **Direction:** Linear-inspired premium AI command center. Vercel/Geist-level typography. Dark SaaS, executive, boardroom-ready.

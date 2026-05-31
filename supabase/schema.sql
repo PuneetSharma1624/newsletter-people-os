@@ -113,3 +113,39 @@ $$;
 -- ALTER TABLE newsletter_issues ADD COLUMN IF NOT EXISTS sections JSONB NOT NULL DEFAULT '[]'::jsonb;
 -- ALTER TABLE newsletter_issues ADD COLUMN IF NOT EXISTS executive_summary TEXT;
 -- UPDATE newsletter_issues SET sections = '[]'::jsonb WHERE sections IS NULL;
+
+-- ============================================================
+-- MIGRATION v3: Analytics & Admin Notifications (idempotent)
+-- Run in Supabase SQL Editor to enable visitor counters,
+-- subscriber notifications, and admin subscriber list.
+-- ============================================================
+
+-- Add missing columns to subscribers (safe — IF NOT EXISTS)
+ALTER TABLE public.subscribers ADD COLUMN IF NOT EXISTS last_email_sent_at TIMESTAMPTZ;
+
+-- TABLE: site_analytics (visit events, no raw PII)
+CREATE TABLE IF NOT EXISTS public.site_analytics (
+    id               BIGSERIAL PRIMARY KEY,
+    event_type       TEXT NOT NULL,
+    page_path        TEXT,
+    referrer         TEXT,
+    user_agent_hash  TEXT,
+    visitor_hash     TEXT,
+    created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_site_analytics_event_type  ON public.site_analytics (event_type);
+CREATE INDEX IF NOT EXISTS idx_site_analytics_created_at  ON public.site_analytics (created_at);
+CREATE INDEX IF NOT EXISTS idx_site_analytics_visitor     ON public.site_analytics (visitor_hash);
+
+-- TABLE: admin_notification_state (single-row state for bell badge)
+CREATE TABLE IF NOT EXISTS public.admin_notification_state (
+    id                       TEXT PRIMARY KEY,
+    last_seen_subscriber_at  TIMESTAMPTZ,
+    updated_at               TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Seed default state row (upsert-safe)
+INSERT INTO public.admin_notification_state (id, last_seen_subscriber_at)
+VALUES ('default', NOW())
+ON CONFLICT (id) DO NOTHING;

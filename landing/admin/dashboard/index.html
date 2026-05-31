@@ -14,142 +14,193 @@
     .adm-nav{
       display:flex;align-items:center;justify-content:space-between;
       padding:0 32px;height:54px;
-      background:rgba(8,12,21,0.92);
-      backdrop-filter:blur(20px);border-bottom:1px solid var(--border-subtle);
-      position:sticky;top:0;z-index:100;
+      background:rgba(8,12,21,0.92);backdrop-filter:blur(20px);
+      border-bottom:1px solid var(--border-subtle);
+      position:sticky;top:0;z-index:200;
     }
-    .adm-brand{
-      font-size:0.875rem;font-weight:700;color:var(--white);
-      text-decoration:none;letter-spacing:-0.02em;
-      display:flex;align-items:center;gap:8px;
+    .adm-brand{font-size:0.875rem;font-weight:700;color:var(--white);text-decoration:none;letter-spacing:-0.02em;display:flex;align-items:center;gap:8px;}
+    .adm-brand::before{content:'';display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--accent);box-shadow:0 0 8px rgba(99,102,241,0.9);}
+    .adm-nav-right{display:flex;align-items:center;gap:8px;}
+    .adm-badge{font-size:0.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--danger);background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.2);border-radius:999px;padding:3px 10px;}
+
+    /* NOTIFICATION BELL */
+    .notif-wrap{position:relative;}
+    .notif-btn{
+      background:transparent;border:1px solid var(--border-subtle);border-radius:var(--radius);
+      color:var(--text-muted);cursor:pointer;font-size:0.9rem;
+      padding:5px 10px;transition:all .15s;display:flex;align-items:center;gap:6px;
+      font-family:var(--font);
     }
-    .adm-brand::before{
-      content:'';display:inline-block;width:7px;height:7px;border-radius:50%;
-      background:var(--accent);box-shadow:0 0 8px rgba(99,102,241,0.9);
+    .notif-btn:hover{border-color:var(--border-default);color:var(--white);}
+    .notif-badge{
+      background:var(--danger);color:#fff;border-radius:999px;
+      font-size:0.6rem;font-weight:800;padding:1px 5px;min-width:16px;text-align:center;
     }
-    .adm-nav-right{display:flex;align-items:center;gap:10px;}
-    .adm-badge{
-      font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;
-      color:var(--danger);background:rgba(239,68,68,0.1);
-      border:1px solid rgba(239,68,68,0.2);border-radius:999px;padding:3px 10px;
+    .notif-panel{
+      position:absolute;right:0;top:calc(100% + 8px);
+      width:320px;background:var(--bg-card);
+      border:1px solid var(--border-strong);border-radius:var(--radius-lg);
+      box-shadow:var(--shadow-lg);z-index:500;overflow:hidden;
     }
+    .notif-panel-head{
+      display:flex;align-items:center;justify-content:space-between;
+      padding:12px 16px;border-bottom:1px solid var(--border-subtle);
+    }
+    .notif-panel-title{font-size:0.78rem;font-weight:700;color:var(--white);}
+    .notif-mark-btn{
+      background:transparent;border:none;color:var(--accent);cursor:pointer;
+      font-family:var(--font);font-size:0.72rem;font-weight:600;padding:0;
+      transition:opacity .15s;
+    }
+    .notif-mark-btn:hover{opacity:.7;}
+    .notif-list{max-height:280px;overflow-y:auto;padding:8px 0;}
+    .notif-item{padding:10px 16px;border-bottom:1px solid var(--border-subtle);}
+    .notif-item:last-child{border-bottom:none;}
+    .notif-email{display:block;font-size:0.82rem;font-weight:600;color:var(--white);margin-bottom:2px;}
+    .notif-meta{font-size:0.72rem;color:var(--text-dim);}
+    .notif-empty{padding:20px 16px;font-size:0.8rem;color:var(--text-dim);text-align:center;}
 
     /* LAYOUT */
-    .adm-wrap{max-width:900px;margin:0 auto;padding:36px 32px 80px;}
+    .adm-wrap{max-width:960px;margin:0 auto;padding:32px 32px 80px;}
 
     /* HEADER */
-    .adm-header{margin-bottom:32px;padding-bottom:24px;border-bottom:1px solid var(--border-subtle);}
-    .adm-eyebrow{
-      font-size:0.68rem;font-weight:700;color:var(--text-dim);
-      text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px;
-    }
-    .adm-title{font-size:1.4rem;font-weight:800;color:var(--white);letter-spacing:-0.03em;margin-bottom:4px;}
-    .adm-sub{font-size:0.82rem;color:var(--text-muted);}
+    .adm-header{margin-bottom:24px;padding-bottom:20px;border-bottom:1px solid var(--border-subtle);}
+    .adm-eyebrow{font-size:0.65rem;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px;}
+    .adm-title{font-size:1.3rem;font-weight:800;color:var(--white);letter-spacing:-0.03em;margin-bottom:3px;}
+    .adm-sub{font-size:0.8rem;color:var(--text-muted);}
 
     /* SECTION LABEL */
-    .section-label{
-      font-size:0.65rem;font-weight:700;color:var(--text-dim);
-      text-transform:uppercase;letter-spacing:.1em;margin-bottom:12px;
-    }
+    .section-label{font-size:0.62rem;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.1em;margin-bottom:10px;}
 
-    /* STATUS GRID */
-    .status-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px;margin-bottom:32px;}
-    .stat-card{
-      background:var(--bg-elevated);border:1px solid var(--border-subtle);
-      border-radius:var(--radius-lg);padding:16px 18px;transition:border-color .15s;
+    /* ADMIN KPI STRIP */
+    .adm-kpi-strip{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-bottom:28px;}
+    .adm-kpi-card{background:var(--bg-elevated);border:1px solid var(--border-subtle);border-radius:var(--radius-lg);padding:14px 16px;transition:border-color .15s;}
+    .adm-kpi-card:hover{border-color:var(--border-default);}
+    .adm-kpi-val{font-size:1.3rem;font-weight:800;color:var(--white);letter-spacing:-0.03em;margin-bottom:3px;}
+    .adm-kpi-label{font-size:0.65rem;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.08em;}
+    .adm-kpi-sub{font-size:0.68rem;color:var(--text-dim);margin-top:2px;}
+
+    /* TABS */
+    .tab-nav{
+      display:flex;gap:2px;border-bottom:1px solid var(--border-subtle);
+      margin-bottom:24px;
     }
+    .tab-btn{
+      background:transparent;border:none;border-bottom:2px solid transparent;
+      color:var(--text-dim);cursor:pointer;font-family:var(--font);
+      font-size:0.82rem;font-weight:600;padding:10px 16px;
+      transition:color .15s,border-color .15s;
+      margin-bottom:-1px;
+    }
+    .tab-btn:hover{color:var(--text-muted);}
+    .tab-btn--active{color:var(--white);border-bottom-color:var(--accent);}
+
+    /* SYSTEM STATUS */
+    .status-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;margin-bottom:28px;}
+    .stat-card{background:var(--bg-elevated);border:1px solid var(--border-subtle);border-radius:var(--radius-lg);padding:14px 16px;transition:border-color .15s;}
     .stat-card:hover{border-color:var(--border-default);}
-    .stat-label{
-      font-size:0.65rem;font-weight:700;color:var(--text-dim);
-      text-transform:uppercase;letter-spacing:.08em;margin-bottom:7px;
-    }
-    .stat-value{font-size:1rem;font-weight:700;color:var(--white);letter-spacing:-0.01em;}
+    .stat-label{font-size:0.62rem;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;}
+    .stat-value{font-size:0.95rem;font-weight:700;color:var(--white);letter-spacing:-0.01em;}
     .stat-value.ok{color:var(--success);}
     .stat-value.warn{color:var(--warning);}
     .stat-value.fail{color:var(--danger);}
 
     /* GITHUB NOTE */
-    .github-note{
-      background:rgba(99,102,241,0.06);border:1px solid rgba(99,102,241,0.18);
-      border-radius:var(--radius);padding:14px 16px;
-      font-size:0.78rem;color:#818cf8;line-height:1.6;margin-bottom:24px;
-    }
+    .github-note{background:rgba(99,102,241,0.06);border:1px solid rgba(99,102,241,0.18);border-radius:var(--radius);padding:12px 16px;font-size:0.78rem;color:#818cf8;line-height:1.6;margin-bottom:24px;}
 
-    /* BUTTON GRID */
-    .btn-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px;margin-bottom:32px;}
+    /* ACTION BUTTONS */
+    .btn-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(195px,1fr));gap:8px;margin-bottom:28px;}
     .action-btn{
       background:var(--bg-elevated);border:1px solid var(--border-subtle);
       border-radius:var(--radius);color:var(--text-muted);
       cursor:pointer;font-family:var(--font);font-size:0.82rem;font-weight:600;
-      padding:12px 16px;text-align:left;transition:all .15s;
+      padding:11px 14px;text-align:left;transition:all .15s;
       display:flex;align-items:center;gap:8px;
     }
     .action-btn:hover{border-color:var(--accent-border);color:var(--accent);}
     .action-btn:disabled{opacity:.4;cursor:not-allowed;}
     .action-btn.danger:hover{border-color:rgba(239,68,68,0.4);color:var(--danger);}
-    .action-btn .btn-icon{
-      width:20px;height:20px;border-radius:5px;
-      display:flex;align-items:center;justify-content:center;
-      background:var(--bg-card);font-size:0.75rem;flex-shrink:0;
-    }
+    .btn-icon{width:20px;height:20px;border-radius:4px;display:flex;align-items:center;justify-content:center;background:var(--bg-card);font-size:0.75rem;flex-shrink:0;}
 
-    /* LOG BOX */
-    .log-box{
-      background:var(--bg-surface);border:1px solid var(--border-subtle);
-      border-radius:var(--radius-lg);padding:16px;
-      font-family:'Courier New',monospace;font-size:0.78rem;
-      color:var(--text-dim);max-height:300px;overflow-y:auto;
-      white-space:pre-wrap;line-height:1.65;
-    }
+    /* LOG */
+    .log-box{background:var(--bg-surface);border:1px solid var(--border-subtle);border-radius:var(--radius-lg);padding:14px;font-family:'Courier New',monospace;font-size:0.78rem;color:var(--text-dim);max-height:280px;overflow-y:auto;white-space:pre-wrap;line-height:1.65;}
     .log-line.ok{color:var(--success);}
     .log-line.err{color:var(--danger);}
     .log-line.warn{color:var(--warning);}
     .log-line.info{color:#818cf8;}
 
+    /* SUBSCRIBERS TAB */
+    .sub-controls{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:16px;}
+    .sub-select{
+      background:var(--bg-elevated);border:1px solid var(--border-default);border-radius:var(--radius);
+      color:var(--text-muted);font-family:var(--font);font-size:0.8rem;
+      padding:7px 12px;outline:none;cursor:pointer;transition:border-color .15s;
+    }
+    .sub-select:focus{border-color:var(--accent-border);}
+    .sub-date-input{
+      background:var(--bg-elevated);border:1px solid var(--border-default);border-radius:var(--radius);
+      color:var(--text-muted);font-family:var(--font);font-size:0.8rem;
+      padding:7px 12px;outline:none;transition:border-color .15s;
+    }
+    .sub-date-input:focus{border-color:var(--accent-border);}
+    .sub-apply-btn{
+      background:var(--accent);border:none;border-radius:var(--radius);
+      color:#fff;cursor:pointer;font-family:var(--font);font-size:0.78rem;font-weight:600;
+      padding:7px 16px;transition:background .15s;
+    }
+    .sub-apply-btn:hover{background:var(--accent-hover);}
+    .sub-refresh-btn{
+      background:transparent;border:1px solid var(--border-subtle);border-radius:var(--radius);
+      color:var(--text-dim);cursor:pointer;font-family:var(--font);font-size:0.78rem;
+      padding:7px 12px;transition:all .15s;
+    }
+    .sub-refresh-btn:hover{border-color:var(--border-default);color:var(--text-muted);}
+    .sub-count{font-size:0.75rem;color:var(--text-dim);margin-left:auto;}
+
+    /* SUBSCRIBER TABLE */
+    .sub-table-wrap{overflow-x:auto;border:1px solid var(--border-subtle);border-radius:var(--radius-lg);}
+    table.sub-table{width:100%;border-collapse:collapse;min-width:640px;}
+    .sub-table thead tr{background:var(--bg-elevated);border-bottom:1px solid var(--border-default);}
+    .sub-table th{
+      font-size:0.65rem;font-weight:700;color:var(--text-dim);
+      text-transform:uppercase;letter-spacing:.08em;
+      padding:10px 14px;text-align:left;white-space:nowrap;
+    }
+    .sub-table tbody tr{border-bottom:1px solid var(--border-subtle);transition:background .1s;}
+    .sub-table tbody tr:last-child{border-bottom:none;}
+    .sub-table tbody tr:hover{background:rgba(255,255,255,0.02);}
+    .sub-td{font-size:0.8rem;color:var(--text-muted);padding:11px 14px;vertical-align:middle;}
+    .sub-td-email{color:var(--white);font-weight:500;}
+    .sub-status{font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;padding:2px 8px;border-radius:999px;border:1px solid;}
+    .sub-status-active{color:var(--success);background:rgba(34,197,94,0.1);border-color:rgba(34,197,94,0.25);}
+    .sub-status-unsub{color:var(--text-dim);background:var(--bg-card);border-color:var(--border-subtle);}
+    .sub-loading,.sub-empty,.sub-error{padding:32px;text-align:center;font-size:0.84rem;color:var(--text-dim);}
+    .sub-error{color:var(--danger);}
+
     /* CONFIRM OVERLAY */
-    .confirm-overlay{
-      position:fixed;inset:0;background:rgba(0,0,0,0.75);
-      display:none;align-items:center;justify-content:center;z-index:999;
-      backdrop-filter:blur(4px);
-    }
+    .confirm-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.75);display:none;align-items:center;justify-content:center;z-index:999;backdrop-filter:blur(4px);}
     .confirm-overlay.show{display:flex;}
-    .confirm-box{
-      background:var(--bg-elevated);border:1px solid var(--border-strong);
-      border-radius:var(--radius-xl);padding:32px;max-width:420px;width:90%;
-      box-shadow:var(--shadow-lg);
-    }
-    .confirm-box h3{color:var(--white);font-size:1.05rem;font-weight:700;letter-spacing:-0.02em;margin-bottom:8px;}
-    .confirm-box p{color:var(--text-muted);font-size:0.84rem;margin-bottom:24px;line-height:1.55;}
+    .confirm-box{background:var(--bg-elevated);border:1px solid var(--border-strong);border-radius:var(--radius-xl);padding:30px;max-width:420px;width:90%;box-shadow:var(--shadow-lg);}
+    .confirm-box h3{color:var(--white);font-size:1rem;font-weight:700;letter-spacing:-0.02em;margin-bottom:8px;}
+    .confirm-box p{color:var(--text-muted);font-size:0.84rem;margin-bottom:22px;line-height:1.55;}
     .confirm-btns{display:flex;gap:10px;}
-    .confirm-ok{
-      flex:1;background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.3);
-      border-radius:var(--radius);color:var(--danger);
-      cursor:pointer;font-family:var(--font);font-weight:700;
-      font-size:0.875rem;padding:11px;transition:all .15s;
-    }
-    .confirm-ok:hover{background:rgba(239,68,68,0.25);}
-    .confirm-cancel{
-      flex:1;background:var(--bg-card);border:1px solid var(--border-default);
-      border-radius:var(--radius);color:var(--text-muted);
-      cursor:pointer;font-family:var(--font);font-weight:600;
-      font-size:0.875rem;padding:11px;transition:all .15s;
-    }
+    .confirm-ok{flex:1;background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.25);border-radius:var(--radius);color:var(--danger);cursor:pointer;font-family:var(--font);font-weight:700;font-size:0.875rem;padding:10px;transition:all .15s;}
+    .confirm-ok:hover{background:rgba(239,68,68,0.22);}
+    .confirm-cancel{flex:1;background:var(--bg-card);border:1px solid var(--border-default);border-radius:var(--radius);color:var(--text-muted);cursor:pointer;font-family:var(--font);font-weight:600;font-size:0.875rem;padding:10px;transition:all .15s;}
     .confirm-cancel:hover{border-color:var(--border-strong);color:var(--white);}
 
-    /* LOGOUT */
-    .logout-btn{
-      background:transparent;border:1px solid var(--border-subtle);
-      border-radius:var(--radius);color:var(--text-dim);
-      cursor:pointer;font-family:var(--font);font-size:0.75rem;font-weight:600;
-      padding:5px 12px;transition:all .15s;
-    }
-    .logout-btn:hover{border-color:var(--danger);color:var(--danger);}
+    /* UTILITY */
+    .logout-btn{background:transparent;border:1px solid var(--border-subtle);border-radius:var(--radius);color:var(--text-dim);cursor:pointer;font-family:var(--font);font-size:0.75rem;font-weight:600;padding:5px 12px;transition:all .15s;}
+    .logout-btn:hover{border-color:rgba(239,68,68,0.4);color:var(--danger);}
+    .nav-txt-link{font-size:0.78rem;color:var(--text-dim);text-decoration:none;padding:5px 10px;border-radius:5px;transition:color .15s;}
+    .nav-txt-link:hover{color:var(--white);}
 
     @media(max-width:640px){
       .adm-nav{padding:0 16px;}
-      .adm-wrap{padding:24px 16px 60px;}
+      .adm-wrap{padding:20px 16px 60px;}
       .btn-grid{grid-template-columns:1fr 1fr;}
       .status-grid{grid-template-columns:1fr 1fr;}
+      .adm-kpi-strip{grid-template-columns:1fr 1fr;}
     }
     @media(max-width:400px){
       .btn-grid{grid-template-columns:1fr;}
@@ -162,57 +213,152 @@
   <a href="/" class="adm-brand">PeopleOS Brief</a>
   <div class="adm-nav-right">
     <span class="adm-badge">Admin</span>
-    <a href="/" style="font-size:0.78rem;color:var(--text-dim);text-decoration:none;padding:5px 10px;border-radius:5px;transition:color .15s;" onmouseover="this.style.color='var(--white)'" onmouseout="this.style.color='var(--text-dim)'">Dashboard</a>
+    <a href="/" class="nav-txt-link">Dashboard</a>
+
+    <!-- NOTIFICATION BELL -->
+    <div class="notif-wrap" id="notifWrap">
+      <button class="notif-btn" id="notifBtn" onclick="toggleNotifPanel()" title="New subscribers">
+        🔔
+        <span class="notif-badge" id="notifBadge" hidden>0</span>
+      </button>
+      <div class="notif-panel" id="notifPanel" hidden>
+        <div class="notif-panel-head">
+          <span class="notif-panel-title">New Subscribers</span>
+          <button class="notif-mark-btn" onclick="markNotificationsSeen()">Mark as seen</button>
+        </div>
+        <div class="notif-list" id="notifList">
+          <div class="notif-empty">Loading…</div>
+        </div>
+      </div>
+    </div>
+
     <button class="logout-btn" onclick="logout()">Logout</button>
   </div>
 </nav>
 
 <div class="adm-wrap">
 
+  <!-- HEADER -->
   <div class="adm-header">
     <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;">
       <div>
         <div class="adm-eyebrow">Control Panel</div>
         <h1 class="adm-title">Admin Dashboard</h1>
-        <p class="adm-sub">PeopleOS Brief content generation &amp; dispatch control.</p>
+        <p class="adm-sub">PeopleOS Brief content generation &amp; subscriber control.</p>
       </div>
-      <button onclick="loadStatus()" style="background:transparent;border:1px solid var(--border-subtle);color:var(--text-dim);cursor:pointer;font-family:var(--font);font-size:0.75rem;font-weight:600;padding:7px 14px;border-radius:var(--radius);transition:all .15s;white-space:nowrap;" onmouseover="this.style.borderColor='var(--border-default)';this.style.color='var(--white)'" onmouseout="this.style.borderColor='var(--border-subtle)';this.style.color='var(--text-dim)'">↻ Refresh</button>
+      <button onclick="loadStatus();loadAdminStats();loadNotifications();" style="background:transparent;border:1px solid var(--border-subtle);color:var(--text-dim);cursor:pointer;font-family:var(--font);font-size:0.75rem;font-weight:600;padding:7px 14px;border-radius:var(--radius);transition:all .15s;" onmouseover="this.style.color='var(--white)'" onmouseout="this.style.color='var(--text-dim)'">↻ Refresh All</button>
     </div>
   </div>
 
-  <p class="section-label">System Status</p>
-  <div class="status-grid" id="statusGrid">
-    <div class="stat-card"><div class="stat-label">Today</div><div class="stat-value" id="statToday">—</div></div>
-    <div class="stat-card"><div class="stat-label">Today's Issue</div><div class="stat-value" id="statTodayExists">—</div></div>
-    <div class="stat-card"><div class="stat-label">Latest Issue</div><div class="stat-value" id="statLatest">—</div></div>
-    <div class="stat-card"><div class="stat-label">Generation</div><div class="stat-value" id="statGenStatus">—</div></div>
-    <div class="stat-card"><div class="stat-label">Total Archived</div><div class="stat-value" id="statCount">—</div></div>
-    <div class="stat-card"><div class="stat-label">GitHub Dispatch</div><div class="stat-value" id="statGithub">—</div></div>
+  <!-- ADMIN ANALYTICS KPI STRIP -->
+  <p class="section-label">Site Analytics</p>
+  <div class="adm-kpi-strip">
+    <div class="adm-kpi-card">
+      <div class="adm-kpi-val" id="admKpiVisits">—</div>
+      <div class="adm-kpi-label">Total Visitors</div>
+      <div class="adm-kpi-sub">All time visits</div>
+    </div>
+    <div class="adm-kpi-card">
+      <div class="adm-kpi-val" id="admKpiTodayVisits">—</div>
+      <div class="adm-kpi-label">Today's Visits</div>
+      <div class="adm-kpi-sub">Since midnight</div>
+    </div>
+    <div class="adm-kpi-card">
+      <div class="adm-kpi-val" id="admKpiSubs">—</div>
+      <div class="adm-kpi-label">Total Subscribers</div>
+      <div class="adm-kpi-sub">Active readers</div>
+    </div>
+    <div class="adm-kpi-card">
+      <div class="adm-kpi-val" id="admKpiNewToday">—</div>
+      <div class="adm-kpi-label">New Today</div>
+      <div class="adm-kpi-sub">Subscribed since midnight</div>
+    </div>
+    <div class="adm-kpi-card" style="grid-column:span 2;min-height:0;">
+      <div class="adm-kpi-label" style="margin-bottom:4px;">Last Subscriber</div>
+      <div class="adm-kpi-sub" id="admKpiLastSub" style="font-size:0.78rem;color:var(--text-muted);">—</div>
+    </div>
   </div>
 
-  <div class="github-note" id="githubNote" style="display:none;">
-    ⚡ GitHub Actions dispatch not configured. Trigger buttons will show manual fallback instructions.<br>
-    Add <code style="background:rgba(99,102,241,0.12);padding:1px 5px;border-radius:3px;">GITHUB_OWNER</code>,
-    <code style="background:rgba(99,102,241,0.12);padding:1px 5px;border-radius:3px;">GITHUB_REPO</code>,
-    <code style="background:rgba(99,102,241,0.12);padding:1px 5px;border-radius:3px;">GITHUB_PAT_FOR_WORKFLOW_DISPATCH</code> to your Vercel env vars.
+  <!-- TABS -->
+  <div class="tab-nav">
+    <button class="tab-btn tab-btn--active" data-tab="overview" onclick="switchTab('overview')">Overview</button>
+    <button class="tab-btn" data-tab="subscribers" onclick="switchTab('subscribers')">Subscribers</button>
   </div>
 
-  <p class="section-label">Actions</p>
-  <div class="btn-grid">
-    <button class="action-btn" onclick="trigger('generate_today')"><span class="btn-icon">⚡</span>Generate Today's Brief</button>
-    <button class="action-btn" onclick="trigger('generate_today', true)"><span class="btn-icon">🔄</span>Force Regenerate</button>
-    <button class="action-btn" onclick="triggerTest()"><span class="btn-icon">📧</span>Send Test Email</button>
-    <button class="action-btn danger" onclick="confirmLiveSend()"><span class="btn-icon">🚀</span>Trigger Live Send</button>
-    <button class="action-btn" onclick="trigger('backfill_initial')"><span class="btn-icon">📦</span>Backfill 3 Days</button>
-    <button class="action-btn" onclick="trigger('dry_run')"><span class="btn-icon">🔍</span>Dry Run</button>
-    <button class="action-btn" onclick="refreshIndex()"><span class="btn-icon">🗂</span>Refresh Archive Index</button>
-  </div>
+  <!-- ── OVERVIEW TAB ── -->
+  <div id="tab-overview" class="tab-panel">
 
-  <p class="section-label">Activity Log</p>
-  <div class="log-box" id="logBox">Admin dashboard loaded. Ready.</div>
+    <p class="section-label">System Status</p>
+    <div class="status-grid">
+      <div class="stat-card"><div class="stat-label">Today</div><div class="stat-value" id="statToday">—</div></div>
+      <div class="stat-card"><div class="stat-label">Today's Issue</div><div class="stat-value" id="statTodayExists">—</div></div>
+      <div class="stat-card"><div class="stat-label">Latest Issue</div><div class="stat-value" id="statLatest">—</div></div>
+      <div class="stat-card"><div class="stat-label">Generation</div><div class="stat-value" id="statGenStatus">—</div></div>
+      <div class="stat-card"><div class="stat-label">Total Archived</div><div class="stat-value" id="statCount">—</div></div>
+      <div class="stat-card"><div class="stat-label">GitHub Dispatch</div><div class="stat-value" id="statGithub">—</div></div>
+    </div>
 
-</div>
+    <div class="github-note" id="githubNote" style="display:none;">
+      ⚡ GitHub Actions dispatch not configured. Trigger buttons will show manual fallback instructions.<br>
+      Add <code style="background:rgba(99,102,241,0.12);padding:1px 5px;border-radius:3px;">GITHUB_OWNER</code>,
+      <code style="background:rgba(99,102,241,0.12);padding:1px 5px;border-radius:3px;">GITHUB_REPO</code>,
+      <code style="background:rgba(99,102,241,0.12);padding:1px 5px;border-radius:3px;">GITHUB_PAT_FOR_WORKFLOW_DISPATCH</code> to your Vercel env vars.
+    </div>
 
+    <p class="section-label">Actions</p>
+    <div class="btn-grid">
+      <button class="action-btn" onclick="trigger('generate_today')"><span class="btn-icon">⚡</span>Generate Today's Brief</button>
+      <button class="action-btn" onclick="trigger('generate_today', true)"><span class="btn-icon">🔄</span>Force Regenerate</button>
+      <button class="action-btn" onclick="triggerTest()"><span class="btn-icon">📧</span>Send Test Email</button>
+      <button class="action-btn danger" onclick="confirmLiveSend()"><span class="btn-icon">🚀</span>Trigger Live Send</button>
+      <button class="action-btn" onclick="trigger('backfill_initial')"><span class="btn-icon">📦</span>Backfill 3 Days</button>
+      <button class="action-btn" onclick="trigger('dry_run')"><span class="btn-icon">🔍</span>Dry Run</button>
+      <button class="action-btn" onclick="refreshIndex()"><span class="btn-icon">🗂</span>Refresh Archive Index</button>
+    </div>
+
+    <p class="section-label">Activity Log</p>
+    <div class="log-box" id="logBox">Admin dashboard loaded. Ready.</div>
+
+  </div><!-- /tab-overview -->
+
+  <!-- ── SUBSCRIBERS TAB ── -->
+  <div id="tab-subscribers" class="tab-panel" hidden>
+
+    <div class="sub-controls">
+      <select id="subStatusFilter" class="sub-select">
+        <option value="all">All subscribers</option>
+        <option value="active">Active</option>
+        <option value="unsubscribed">Unsubscribed</option>
+      </select>
+      <input type="date" id="subSinceFilter" class="sub-date-input" placeholder="Since date" title="Subscribed since" />
+      <button class="sub-apply-btn" onclick="applySubscriberFilter()">Apply</button>
+      <button class="sub-refresh-btn" onclick="loadSubscribers()">↻ Refresh</button>
+      <span class="sub-count" id="subCount"></span>
+    </div>
+
+    <div class="sub-table-wrap">
+      <table class="sub-table">
+        <thead>
+          <tr>
+            <th>Email</th>
+            <th>Status</th>
+            <th>Source</th>
+            <th>Subscribed</th>
+            <th>Last Email</th>
+            <th>Unsubscribed</th>
+          </tr>
+        </thead>
+        <tbody id="subTableBody">
+          <tr><td colspan="6" class="sub-loading">Select a filter and click Apply, or wait for auto-load.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+  </div><!-- /tab-subscribers -->
+
+</div><!-- /adm-wrap -->
+
+<!-- CONFIRM OVERLAY -->
 <div class="confirm-overlay" id="confirmOverlay">
   <div class="confirm-box">
     <h3 id="confirmTitle">Confirm Action</h3>
