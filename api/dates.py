@@ -28,3 +28,7 @@ def handler(request, response=None):
     except Exception as exc:
         log.error(f"dates error: {exc}")
         return _json({"ok": False, "dates": [], "message": "Server error."}, 500)
+
+
+app = handler
+application = handler

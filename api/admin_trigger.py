@@ -122,3 +122,7 @@ def handler(request, response=None):
         }, 503 if "not configured" in message else 502)
 
     return _json({"ok": True, "message": message, "mode": mode})
+
+
+app = handler
+application = handler

@@ -31,3 +31,7 @@ def handler(request, response=None):
     except Exception as exc:
         log.error(f"latest-brief error: {exc}")
         return _json({"ok": False, "message": "Server error."}, 500)
+
+
+app = handler
+application = handler

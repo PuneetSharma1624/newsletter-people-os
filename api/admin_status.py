@@ -68,3 +68,7 @@ def handler(request, response=None):
         })
     except Exception as exc:
         return _json({"ok": False, "message": f"Error: {exc}"}, 500)
+
+
+app = handler
+application = handler
