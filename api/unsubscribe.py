@@ -104,3 +104,9 @@ def handler(request, response=None):
         return _html_response(_HTML_SUCCESS, 200)
     else:
         return _html_response(_HTML_INVALID, 400)
+
+
+# Vercel Python runtime looks for a top-level 'app', 'application', or 'handler'.
+# Expose all three so any runtime version finds it.
+app = handler
+application = handler

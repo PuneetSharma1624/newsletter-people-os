@@ -74,3 +74,9 @@ def handler(request, response=None):
         return _json({"ok": True, "message": "You're already subscribed to PeopleOS Brief."})
 
     return _json({"ok": True, "message": "You're subscribed to PeopleOS Brief."})
+
+
+# Vercel Python runtime looks for a top-level 'app', 'application', or 'handler'.
+# Expose all three so any runtime version finds it.
+app = handler
+application = handler
