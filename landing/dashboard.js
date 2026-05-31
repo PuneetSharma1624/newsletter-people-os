@@ -88,23 +88,38 @@
   }
 
   // ─── STATES ─────────────────────────────────────────────
+  // Use both hidden attribute AND style.display — CSS display:flex can override hidden alone.
   function showLoading() {
-    document.getElementById('stateLoading').hidden=false;
-    document.getElementById('stateEmpty').hidden=true;
-    document.getElementById('issueContent').hidden=true;
+    const l = document.getElementById('stateLoading');
+    const e = document.getElementById('stateEmpty');
+    const c = document.getElementById('issueContent');
+    if (l) { l.hidden = false; l.style.display = 'flex'; }
+    if (e) { e.hidden = true;  e.style.display = 'none'; }
+    if (c) { c.hidden = true;  c.style.display = 'none'; }
   }
   function showEmpty() {
-    document.getElementById('stateLoading').hidden=true;
-    document.getElementById('stateEmpty').hidden=false;
-    document.getElementById('issueContent').hidden=true;
+    const l = document.getElementById('stateLoading');
+    const e = document.getElementById('stateEmpty');
+    const c = document.getElementById('issueContent');
+    if (l) { l.hidden = true;  l.style.display = 'none'; }
+    if (e) { e.hidden = false; e.style.display = ''; }
+    if (c) { c.hidden = true;  c.style.display = 'none'; }
   }
 
   // ─── RENDER ISSUE ────────────────────────────────────────
   function renderIssue(issue) {
-    document.getElementById('stateLoading').hidden=true;
-    document.getElementById('stateEmpty').hidden=true;
-    document.getElementById('issueContent').hidden=false;
-    document.getElementById('demoBanner').hidden = issue._demo!==true;
+    // Explicitly clear spinner via both hidden + style — CSS flex overrides hidden alone
+    const l = document.getElementById('stateLoading');
+    const e = document.getElementById('stateEmpty');
+    const c = document.getElementById('issueContent');
+    if (l) { l.hidden = true;  l.style.display = 'none'; }
+    if (e) { e.hidden = true;  e.style.display = 'none'; }
+    if (c) { c.hidden = false; c.style.display = ''; }
+
+    // Hide demo banner for real issues (_demo not set) or when full 72-item data present
+    const isDemo = issue._demo === true && (issue.total_dashboard_items || 0) < 60;
+    const banner = document.getElementById('demoBanner');
+    if (banner) { banner.hidden = !isDemo; banner.style.display = !isDemo ? 'none' : ''; }
 
     const totalItems = issue.total_dashboard_items||0;
     const totalSections = issue.total_sections||12;
@@ -125,7 +140,13 @@
 
     const grid = document.getElementById('sectionsGrid');
     grid.innerHTML = '';
-    (issue.sections||[]).forEach(section => grid.appendChild(renderSectionCard(section)));
+    (issue.sections||[]).forEach(section => {
+      try {
+        grid.appendChild(renderSectionCard(section));
+      } catch (err) {
+        console.error('Section render error:', section.code, err);
+      }
+    });
     applySectionFilter(activeSection);
   }
 
