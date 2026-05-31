@@ -47,42 +47,6 @@
     </div>
     <div class="back"><a href="/">← Back to Dashboard</a></div>
   </div>
-  <script>
-    const saved = sessionStorage.getItem('admin_token');
-    if (saved) { window.location.href = '/admin/dashboard/'; }
-
-    document.getElementById('loginForm').addEventListener('submit', async function(e) {
-      e.preventDefault();
-      const btn = document.getElementById('loginBtn');
-      const msg = document.getElementById('msg');
-      const token = document.getElementById('tokenInput').value.trim();
-      if (!token) { msg.textContent = 'Token required.'; msg.className = 'msg error'; return; }
-      btn.disabled = true;
-      btn.textContent = 'Checking...';
-      msg.textContent = '';
-      try {
-        const res = await fetch('/api/admin/login', {
-          method: 'POST',
-          headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({token}),
-        });
-        const data = await res.json();
-        if (data.ok) {
-          sessionStorage.setItem('admin_token', data.session);
-          window.location.href = '/admin/dashboard/';
-        } else {
-          msg.textContent = data.message || 'Invalid token.';
-          msg.className = 'msg error';
-          btn.disabled = false;
-          btn.textContent = 'Login';
-        }
-      } catch {
-        msg.textContent = 'Network error. Try again.';
-        msg.className = 'msg error';
-        btn.disabled = false;
-        btn.textContent = 'Login';
-      }
-    });
-  </script>
+  <script src="/admin.js"></script>
 </body>
 </html>
