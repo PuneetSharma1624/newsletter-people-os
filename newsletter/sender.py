@@ -98,6 +98,8 @@ def send_to_subscriber(
             status=status,
             resend_message_id=result.get("message_id", ""),
             error_message=result.get("error", ""),
+            issue_date=issue.get("issue_date", ""),
+            send_type="live",
         )
 
     result["skipped"] = False

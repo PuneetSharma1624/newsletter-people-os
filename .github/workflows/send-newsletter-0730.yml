@@ -1,0 +1,99 @@
+name: "3. Send Newsletter — 7:30 AM IST"
+
+on:
+  schedule:
+    - cron: "0 2 * * *"   # 02:00 UTC = 07:30 IST
+  workflow_dispatch:
+    inputs:
+      send_live:
+        description: "Send live newsletter? Must be 'true' to actually send."
+        required: true
+        default: "false"
+
+jobs:
+  send:
+    name: Send Newsletter (today's issue only)
+    runs-on: ubuntu-latest
+
+    env:
+      GROQ_API_KEY_1:            ${{ secrets.GROQ_API_KEY_1 }}
+      GROQ_API_KEY_2:            ${{ secrets.GROQ_API_KEY_2 }}
+      GROQ_API_KEY_3:            ${{ secrets.GROQ_API_KEY_3 }}
+      TAVILY_API_KEY:            ${{ secrets.TAVILY_API_KEY }}
+      RESEND_API_KEY:            ${{ secrets.RESEND_API_KEY }}
+      SUPABASE_URL:              ${{ secrets.SUPABASE_URL }}
+      SUPABASE_ANON_KEY:         ${{ secrets.SUPABASE_ANON_KEY }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      NEWSLETTER_FROM_EMAIL:     ${{ secrets.NEWSLETTER_FROM_EMAIL }}
+      NEWSLETTER_REPLY_TO:       ${{ secrets.NEWSLETTER_REPLY_TO }}
+      BASE_URL:                  ${{ secrets.BASE_URL }}
+      NEWSLETTER_NAME:           "PeopleOS Brief"
+
+    steps:
+      - name: "Log: workflow header"
+        run: |
+          echo "======================================"
+          echo "PeopleOS Brief Automation"
+          echo "Workflow name : send-newsletter-0730"
+          echo "Run ID        : ${{ github.run_id }}"
+          echo "UTC time      : $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+          echo "IST time      : $(TZ='Asia/Kolkata' date '+%Y-%m-%d %H:%M:%S IST')"
+          echo "Computed date : $(TZ='Asia/Kolkata' date '+%Y-%m-%d')"
+          echo "Trigger       : ${{ github.event_name }}"
+          echo "send_live     : ${{ inputs.send_live || 'scheduled (auto)' }}"
+          echo "======================================"
+
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Validate required environment
+        run: |
+          python -c "
+          import os, sys
+          required = [
+            'GROQ_API_KEY_1','TAVILY_API_KEY','RESEND_API_KEY',
+            'SUPABASE_URL','SUPABASE_SERVICE_ROLE_KEY',
+            'NEWSLETTER_FROM_EMAIL','BASE_URL'
+          ]
+          missing = [v for v in required if not os.getenv(v)]
+          if missing:
+            print(f'FATAL: Missing secrets: {missing}', file=sys.stderr)
+            sys.exit(1)
+          keys = sum(1 for i in (1,2,3) if os.getenv(f'GROQ_API_KEY_{i}'))
+          print(f'Environment OK — {keys} Groq key(s) active')
+          "
+
+      - name: "Log: status before send"
+        run: |
+          echo "--- status.json ---"
+          cat landing/data/status.json 2>/dev/null || echo "(not found)"
+
+      - name: "Validate today's issue exists"
+        run: python newsletter/main.py --check-today
+
+      - name: "Send live (scheduled — auto-send)"
+        if: github.event_name == 'schedule'
+        run: python newsletter/main.py --send-live-today
+
+      - name: "Send live (manual — send_live=true)"
+        if: github.event_name == 'workflow_dispatch' && inputs.send_live == 'true'
+        run: python newsletter/main.py --send-live-today
+
+      - name: "Dry check only (manual — send_live not true)"
+        if: github.event_name == 'workflow_dispatch' && inputs.send_live != 'true'
+        run: |
+          echo "Manual trigger without send_live=true. Only validating — no email sent."
+          python newsletter/main.py --check-today
+
+      - name: "Log: final status"
+        run: |
+          echo "--- status.json after ---"
+          cat landing/data/status.json 2>/dev/null || echo "(not found)"

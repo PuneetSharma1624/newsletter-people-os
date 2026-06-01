@@ -251,22 +251,32 @@ http://localhost:5124/data/dates.json
 ## 8. Generation Commands
 
 ```bash
+# Standard
 python newsletter/main.py --dry-run
-python newsletter/main.py --dry-run --force
 python newsletter/main.py --generate-today
 python newsletter/main.py --generate-today --force
 python newsletter/main.py --backfill-initial
 python newsletter/main.py --seed-demo
 python newsletter/main.py --refresh-index
 python newsletter/main.py --prune-archive
+
+# Reliability commands (used by automation)
+python newsletter/main.py --check-today           # validate completeness, exit 0=ok 1=fail
+python newsletter/main.py --ensure-today          # generate only if missing/incomplete
+python newsletter/main.py --send-live-today        # send today's issue with all safety checks
+python newsletter/main.py --mark-generation-started
+python newsletter/main.py --mark-generation-failed --error-msg "reason"
 ```
 
-- `--dry-run`: Search + generate S1–S12 section by section. Print 72/24 items. No save, no email.
-- `--generate-today`: Generate and save today's issue. Skip if already complete unless `--force`.
-- `--backfill-initial`: Generate last 3 days if archive is empty.
-- `--seed-demo`: Seed demo issue data.
-- `--refresh-index`: Rebuild archive.json and dates.json from issue files.
-- `--prune-archive`: Delete issues older than ARCHIVE_RETENTION_DAYS.
+**Reliability command details:**
+
+| Command | Behaviour |
+|---|---|
+| `--check-today` | Uses IST date. Validates issue: exists, 12 sections, 72 items, 24 email items, all fields, in dates/archive/status. Exit 0=ok, 1=fail. |
+| `--ensure-today` | Checks if complete. If yes, skips. If in_progress <30m, waits. If stale >45m, forces. Runs `--generate-today --force` if needed. |
+| `--send-live-today` | Checks completeness → checks production URL (5 retries × 2min) → checks Supabase duplicate send → sends. Never sends stale issue. |
+| `--mark-generation-started` | Writes `in_progress` to status.json with timestamp. |
+| `--mark-generation-failed` | Writes `failed` to status.json with error message. |
 
 ---
 
@@ -276,23 +286,82 @@ python newsletter/main.py --prune-archive
 # Test email (no live send)
 python newsletter/main.py --test heyypuneet@gmail.com
 
-# Live send to all active subscribers (requires Supabase preflight to pass)
+# Legacy live send (no production availability check)
 python newsletter/main.py --send-live
+
+# Safe live send for today only (recommended — used by automation)
+python newsletter/main.py --send-live-today
 ```
 
-`--send-live` runs Supabase preflight first. If Supabase URL/key/table not configured, it exits cleanly with instructions.
+`--send-live-today` is the production command used by the 7:30 workflow. It:
+1. Validates today's issue completeness
+2. Checks production URL is live (5 retries × 2 min)
+3. Checks Supabase for duplicate sends
+4. Sends only today's issue (never yesterday)
 
 ---
 
-## 10. GitHub Actions
+## 10. GitHub Actions (Three-Stage Automation)
 
-File: `.github/workflows/daily-brief.yml`
+### Schedule
 
-Cron: `30 1 * * *` = 1:30 AM UTC = 7:00 AM IST
+| Time (IST) | UTC Cron | Workflow File | Purpose |
+|---|---|---|---|
+| 7:00 AM | `30 1 * * *` | `generate-brief-0700.yml` | Generate + publish today's brief |
+| 7:15 AM | `45 1 * * *` | `check-and-retry-0715.yml` | Verify + retry if missing/incomplete |
+| 7:30 AM | `0 2 * * *` | `send-newsletter-0730.yml` | Send newsletter (today only) |
 
-Manual dispatch inputs: `dry_run`, `generate_today`, `test_email`, `send_live`, `backfill_initial`, `prune_archive`
+### Concurrency
 
-Manual trigger must **not** accidentally send live emails. `send_live` input requires explicit `true`.
+All three workflows share concurrency group `peopleos-brief-daily-${{ github.ref }}` with `cancel-in-progress: false`. This prevents 7:00 and 7:15 from running generation simultaneously. If 7:00 is still running when 7:15 triggers, 7:15 will queue and wait.
+
+### Duplicate Generation Prevention
+
+- `--ensure-today` checks `status.json` before generating
+- If `generation_status=in_progress` and started <30 min ago → skip
+- If `generation_status=in_progress` and started >45 min ago → treat as stale, retry
+- GitHub Actions concurrency group prevents parallel runs
+
+### Duplicate Email Prevention
+
+- `send_log` table tracks `issue_date` + `send_type` per subscriber
+- `--send-live-today` calls `already_sent_today(date)` before sending
+- If any successful live send exists for today → skip entire batch
+
+### Retry Logic (7:15)
+
+- If `--check-today` passes → print "No retry needed", exit
+- If `--check-today` fails → run `--ensure-today` with `GENERATION_ATTEMPT=retry_0715`
+- Commit + push if files changed
+- status.json `last_generation_attempt` set to `retry_0715`
+
+### Production Availability Check (7:30)
+
+Before sending, `--send-live-today` hits `{BASE_URL}/data/issues/YYYY-MM-DD.json`:
+- Validates HTTP 200, valid JSON, correct date, 12 sections, 72 items
+- Retries 5 times with 2-minute waits (covers Vercel deploy time)
+- If still unavailable → sets `email_status=skipped_issue_not_deployed`, exits
+
+### Manual Recovery
+
+If today's issue does not appear:
+```bash
+python newsletter/main.py --ensure-today
+python newsletter/main.py --check-today
+git add landing/data/
+git commit -m "Generate PeopleOS Brief for YYYY-MM-DD"
+git push origin main
+```
+
+If issue exists but email did not go out:
+```bash
+python newsletter/main.py --check-today
+python newsletter/main.py --send-live-today
+```
+
+### Legacy workflows
+
+`daily-brief.yml` and `newsletter.yml` still exist for manual one-off use. The three new workflows replace their scheduled behaviour.
 
 ---
 

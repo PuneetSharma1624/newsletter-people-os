@@ -93,6 +93,24 @@ def already_sent(issue_id: str, subscriber_id: str) -> bool:
     return bool(result.data)
 
 
+def already_sent_today(issue_date: str) -> bool:
+    """Check if a successful live send already went out for issue_date (any subscriber)."""
+    try:
+        client = _client()
+        result = (
+            client.table("send_log")
+            .select("id")
+            .eq("issue_date", issue_date)
+            .eq("send_type", "live")
+            .eq("status", "sent")
+            .limit(1)
+            .execute()
+        )
+        return bool(result.data)
+    except Exception:
+        return False
+
+
 def log_send(
     issue_id: str,
     subscriber_id: str,
@@ -100,6 +118,8 @@ def log_send(
     status: str,
     resend_message_id: str = "",
     error_message: str = "",
+    issue_date: str = "",
+    send_type: str = "live",
 ) -> None:
     """Write send result to send_log. On conflict (duplicate), ignore."""
     client = _client()
@@ -108,7 +128,10 @@ def log_send(
         "subscriber_id": subscriber_id,
         "email": email,
         "status": status,
+        "send_type": send_type,
     }
+    if issue_date:
+        payload["issue_date"] = issue_date
     if resend_message_id:
         payload["resend_message_id"] = resend_message_id
     if error_message:

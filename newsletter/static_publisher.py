@@ -17,10 +17,30 @@ from __future__ import annotations
 import datetime
 import json
 import os
+import urllib.request
+import urllib.error
 from pathlib import Path
 from typing import Any
 
 from newsletter.logger import log
+
+IST = datetime.timezone(datetime.timedelta(hours=5, minutes=30))
+
+
+def get_ist_now() -> datetime.datetime:
+    return datetime.datetime.now(IST)
+
+
+def get_ist_date() -> str:
+    return get_ist_now().date().isoformat()
+
+
+def _utc_now_str() -> str:
+    return datetime.datetime.now(datetime.timezone.utc).isoformat().replace("+00:00", "Z")
+
+
+def _ist_now_str() -> str:
+    return get_ist_now().isoformat()
 
 # Path resolution: this file is newsletter/static_publisher.py
 # landing/data/ is ../landing/data/ from here
@@ -50,11 +70,31 @@ def _write_json(path: Path, data: Any) -> None:
 # ─── STATUS ──────────────────────────────────────────────────────────────────
 
 def get_status() -> dict:
-    return _read_json(_DATA_DIR / "status.json", {
-        "current_date": None, "status": "not_started",
-        "last_started_at": None, "last_completed_at": None,
-        "last_error": None, "sections_complete": 0,
-    })
+    defaults = {
+        "latest_issue_date": None,
+        "latest_complete_issue_date": None,
+        "generation_status": "not_started",
+        "generation_started_at_utc": None,
+        "generation_completed_at_utc": None,
+        "generation_started_at_ist": None,
+        "generation_completed_at_ist": None,
+        "last_generation_run_id": None,
+        "last_generation_attempt": None,
+        "last_generation_error": None,
+        "sections_complete": 0,
+        "last_email_sent_date": None,
+        "last_email_sent_at_utc": None,
+        "last_email_status": "not_sent",
+        # legacy compat fields
+        "current_date": None,
+        "status": "not_started",
+        "last_started_at": None,
+        "last_completed_at": None,
+        "last_error": None,
+    }
+    stored = _read_json(_DATA_DIR / "status.json", {})
+    defaults.update(stored)
+    return defaults
 
 
 def set_status(
@@ -62,46 +102,248 @@ def set_status(
     current_date: str | None = None,
     error: str | None = None,
     sections_complete: int | None = None,
+    attempt: str | None = None,
+    run_id: str | None = None,
+    email_date: str | None = None,
+    email_status: str | None = None,
+    email_sent_at_utc: str | None = None,
 ) -> None:
     existing = get_status()
-    now = datetime.datetime.now(datetime.timezone.utc).isoformat().replace("+00:00","Z")
+    utc_now = _utc_now_str()
+    ist_now = _ist_now_str()
+
+    # Map old "running"/"complete"/"failed" to new schema names
+    gen_status_map = {
+        "running": "in_progress",
+        "complete": "complete",
+        "failed": "failed",
+        "not_started": "not_started",
+        "retrying": "retrying",
+        "skipped_already_complete": "skipped_already_complete",
+    }
+    gen_status = gen_status_map.get(status, status)
+
+    existing["generation_status"] = gen_status
+    # legacy compat
     existing["status"] = status
+
     if current_date:
         existing["current_date"] = current_date
-    if status == "running" and not existing.get("last_started_at"):
-        existing["last_started_at"] = now
-    if status in ("complete", "failed"):
-        existing["last_completed_at"] = now
-    if error is not None:
-        existing["last_error"] = error
-    if status == "running":
+        existing["latest_issue_date"] = current_date
+
+    if gen_status == "in_progress":
+        if not existing.get("generation_started_at_utc"):
+            existing["generation_started_at_utc"] = utc_now
+            existing["generation_started_at_ist"] = ist_now
+            existing["last_started_at"] = utc_now
+        existing["last_generation_error"] = None
         existing["last_error"] = None
-    if status == "complete":
-        existing["last_started_at"] = None  # reset for next run
+
+    if gen_status in ("complete", "failed"):
+        existing["generation_completed_at_utc"] = utc_now
+        existing["generation_completed_at_ist"] = ist_now
+        existing["last_completed_at"] = utc_now
+
+    if gen_status == "complete" and current_date:
+        existing["latest_complete_issue_date"] = current_date
+        existing["generation_started_at_utc"] = None
+        existing["generation_started_at_ist"] = None
+        existing["last_started_at"] = None
+
+    if error is not None:
+        existing["last_generation_error"] = error
+        existing["last_error"] = error
+
     if sections_complete is not None:
         existing["sections_complete"] = sections_complete
+
+    if attempt is not None:
+        existing["last_generation_attempt"] = attempt
+
+    if run_id is not None:
+        existing["last_generation_run_id"] = run_id
+
+    if email_date is not None:
+        existing["last_email_sent_date"] = email_date
+    if email_status is not None:
+        existing["last_email_status"] = email_status
+    if email_sent_at_utc is not None:
+        existing["last_email_sent_at_utc"] = email_sent_at_utc
+
     _write_json(_DATA_DIR / "status.json", existing)
 
 
 def is_today_complete(date: str) -> bool:
     s = get_status()
-    return s.get("current_date") == date and s.get("status") == "complete"
+    return s.get("latest_complete_issue_date") == date and s.get("generation_status") == "complete"
 
 
 def is_running_recently(date: str, stale_minutes: int = 60) -> bool:
     """True if a run is in progress and not stale."""
     s = get_status()
-    if s.get("current_date") != date or s.get("status") != "running":
+    if s.get("latest_issue_date") != date and s.get("current_date") != date:
         return False
-    started = s.get("last_started_at")
+    if s.get("generation_status") not in ("in_progress", "running"):
+        return False
+    started = s.get("generation_started_at_utc") or s.get("last_started_at")
     if not started:
         return False
     try:
-        dt = datetime.datetime.fromisoformat(started.rstrip("Z"))
-        age = (datetime.datetime.utcnow() - dt).total_seconds() / 60
+        dt = datetime.datetime.fromisoformat(started.rstrip("Z")).replace(tzinfo=datetime.timezone.utc)
+        age = (datetime.datetime.now(datetime.timezone.utc) - dt).total_seconds() / 60
         return age < stale_minutes
     except Exception:
         return False
+
+
+REQUIRED_ITEM_FIELDS = ["headline", "summary", "source_name", "source_url", "why_it_matters", "peopleos_lens", "action"]
+REQUIRED_SECTIONS = 12
+ITEMS_PER_SECTION = 6
+EXPECTED_DASHBOARD_ITEMS = 72
+EXPECTED_EMAIL_ITEMS = 24
+
+
+def validate_issue_complete(issue_date: str) -> dict:
+    """
+    Check issue completeness. Returns structured result dict.
+    ok=True only if ALL checks pass.
+    """
+    errors: list[str] = []
+    result: dict = {
+        "ok": False,
+        "issue_date": issue_date,
+        "exists": False,
+        "valid_json": False,
+        "date_matches": False,
+        "sections": 0,
+        "dashboard_items": 0,
+        "email_items": 0,
+        "in_dates_json": False,
+        "in_archive_json": False,
+        "status_complete": False,
+        "errors": errors,
+    }
+
+    path = _ISSUES_DIR / f"{issue_date}.json"
+    if not path.exists():
+        errors.append("Issue file missing")
+        return result
+    result["exists"] = True
+
+    try:
+        issue = json.loads(path.read_text(encoding="utf-8"))
+        result["valid_json"] = True
+    except Exception as exc:
+        errors.append(f"Invalid JSON: {exc}")
+        return result
+
+    if issue.get("issue_date") != issue_date:
+        errors.append(f"issue_date mismatch: got {issue.get('issue_date')!r}")
+    else:
+        result["date_matches"] = True
+
+    sections = issue.get("sections")
+    if not isinstance(sections, list):
+        errors.append("sections field missing or not a list")
+        return result
+
+    result["sections"] = len(sections)
+    if len(sections) != REQUIRED_SECTIONS:
+        errors.append(f"Expected {REQUIRED_SECTIONS} sections, got {len(sections)}")
+
+    dash_items = 0
+    email_items = 0
+    for sec in sections:
+        items = sec.get("items", [])
+        if len(items) != ITEMS_PER_SECTION:
+            errors.append(f"Section {sec.get('code','?')}: expected {ITEMS_PER_SECTION} items, got {len(items)}")
+        for item in items:
+            dash_items += 1
+            missing = [f for f in REQUIRED_ITEM_FIELDS if not item.get(f)]
+            if missing:
+                errors.append(f"Item missing fields: {missing} in section {sec.get('code','?')}")
+        email_items += min(len(items), 2)
+
+    result["dashboard_items"] = dash_items
+    result["email_items"] = email_items
+
+    if dash_items != EXPECTED_DASHBOARD_ITEMS:
+        errors.append(f"Expected {EXPECTED_DASHBOARD_ITEMS} dashboard items, got {dash_items}")
+    if email_items != EXPECTED_EMAIL_ITEMS:
+        errors.append(f"Expected {EXPECTED_EMAIL_ITEMS} email items, got {email_items}")
+
+    dates = get_dates()
+    result["in_dates_json"] = issue_date in dates
+    if not result["in_dates_json"]:
+        errors.append(f"{issue_date} not in dates.json")
+
+    archive = get_archive()
+    result["in_archive_json"] = any(a.get("issue_date") == issue_date for a in archive)
+    if not result["in_archive_json"]:
+        errors.append(f"{issue_date} not in archive.json")
+
+    s = get_status()
+    result["status_complete"] = (
+        s.get("generation_status") == "complete"
+        and s.get("latest_complete_issue_date") == issue_date
+    )
+    if not result["status_complete"]:
+        errors.append("status.json does not mark today as complete")
+
+    result["ok"] = len(errors) == 0
+    return result
+
+
+def check_production_issue_available(issue_date: str) -> dict:
+    """
+    Hit BASE_URL/data/issues/YYYY-MM-DD.json and validate.
+    Returns dict with ok, status_code, errors.
+    """
+    from newsletter import config as cfg
+    base_url = (cfg.base_url() or "").rstrip("/")
+    url = f"{base_url}/data/issues/{issue_date}.json"
+    errors: list[str] = []
+    result = {"ok": False, "url": url, "status_code": None, "errors": errors}
+
+    if not base_url:
+        errors.append("BASE_URL not configured")
+        return result
+
+    try:
+        req = urllib.request.Request(url, headers={"User-Agent": "PeopleOS-Brief-Checker/1.0"})
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            result["status_code"] = resp.status
+            if resp.status != 200:
+                errors.append(f"HTTP {resp.status}")
+                return result
+            try:
+                issue = json.loads(resp.read().decode("utf-8"))
+            except Exception as exc:
+                errors.append(f"Invalid JSON from production: {exc}")
+                return result
+    except urllib.error.HTTPError as exc:
+        result["status_code"] = exc.code
+        errors.append(f"HTTP error {exc.code}")
+        return result
+    except Exception as exc:
+        errors.append(f"Network error: {exc}")
+        return result
+
+    if issue.get("issue_date") != issue_date:
+        errors.append(f"issue_date mismatch on production: got {issue.get('issue_date')!r}")
+
+    sections = issue.get("sections", [])
+    if len(sections) != REQUIRED_SECTIONS:
+        errors.append(f"Production: expected {REQUIRED_SECTIONS} sections, got {len(sections)}")
+
+    dash_items = sum(len(s.get("items", [])) for s in sections)
+    if dash_items != EXPECTED_DASHBOARD_ITEMS:
+        errors.append(f"Production: expected {EXPECTED_DASHBOARD_ITEMS} dashboard items, got {dash_items}")
+
+    result["ok"] = len(errors) == 0
+    result["sections"] = len(sections)
+    result["dashboard_items"] = dash_items
+    return result
 
 
 # ─── PARTIAL PROGRESS ────────────────────────────────────────────────────────

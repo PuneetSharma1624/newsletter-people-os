@@ -145,21 +145,50 @@
       setStatEl('statToday', data.today || '—');
       setStatEl('statTodayExists', data.today_exists ? 'Published ✓' : 'Not yet',
                 data.today_exists ? 'ok' : 'warn');
-      setStatEl('statLatest', data.latest_date || 'None',
-                data.latest_date ? 'ok' : 'warn');
 
-      const gs     = data.generation_status || {};
-      const status = gs.status || 'not_started';
-      const sCls   = { complete:'ok', running:'warn', failed:'fail', not_started:'' }[status] || '';
-      setStatEl('statGenStatus', status, sCls);
-      setStatEl('statCount',  data.total_archived || '0');
-      setStatEl('statGithub', data.github_configured ? 'Configured ✓' : 'Not configured',
-                data.github_configured ? 'ok' : 'warn');
+      const gs = data.generation_status || {};
+      const latestComplete = gs.latest_complete_issue_date || data.latest_date || 'None';
+      setStatEl('statLatest', latestComplete, latestComplete !== 'None' ? 'ok' : 'warn');
+
+      const genStatus = gs.generation_status || gs.status || 'not_started';
+      const genCls = { complete:'ok', in_progress:'warn', running:'warn', failed:'fail',
+                       retrying:'warn', not_started:'', skipped_already_complete:'ok' }[genStatus] || '';
+      setStatEl('statGenStatus', genStatus.replace(/_/g,' '), genCls);
+
+      // 7:00 run indicator
+      const attempt = gs.last_generation_attempt || '';
+      const ran0700 = attempt === 'scheduled_0700' && genStatus === 'complete' && gs.latest_complete_issue_date === data.today;
+      setStatEl('stat0700', ran0700 ? 'Complete ✓' : (genStatus === 'in_progress' ? 'Running…' : 'Not run'), ran0700 ? 'ok' : (genStatus === 'in_progress' ? 'warn' : ''));
+
+      // 7:15 retry indicator
+      const ran0715 = attempt === 'retry_0715';
+      setStatEl('stat0715', ran0715 ? (genStatus === 'complete' ? 'Retried ✓' : 'Retrying…') : 'Not needed', ran0715 && genStatus === 'complete' ? 'ok' : '');
+
+      // Production (shown as unknown until manually checked)
+      setStatEl('statProduction', '— check manually');
+
+      // Email status
+      const emailStatus = gs.last_email_status || 'not_sent';
+      const emailDate   = gs.last_email_sent_date || '';
+      const emailToday  = emailDate === data.today;
+      const emailCls    = emailStatus === 'sent' && emailToday ? 'ok' : emailStatus === 'failed' ? 'fail' : '';
+      setStatEl('statEmailSent',
+        emailStatus === 'sent' && emailToday ? 'Sent ✓' :
+        emailStatus === 'skipped_already_sent' ? 'Already sent' :
+        emailStatus === 'skipped_issue_missing' ? 'Skipped (no issue)' :
+        emailStatus === 'skipped_issue_not_deployed' ? 'Skipped (not live)' :
+        emailStatus === 'failed' ? 'Failed ✗' : 'Not sent', emailCls);
+
+      // Last error
+      const lastErr = gs.last_generation_error || gs.last_error || '';
+      setStatEl('statLastError', lastErr || '—', lastErr ? 'fail' : '');
+
+      setStatEl('statCount', data.total_archived || '0');
 
       const note = document.getElementById('githubNote');
       if (note) note.style.display = data.github_configured ? 'none' : 'block';
 
-      addLog(`Status: today=${data.today_exists ? 'exists' : 'missing'}, generation=${status}`, 'info');
+      addLog(`Status: today=${data.today_exists ? 'exists' : 'missing'}, gen=${genStatus}, email=${emailStatus}`, 'info');
     } catch (e) {
       addLog('Status load error: ' + e.message, 'err');
     }
@@ -296,19 +325,20 @@
     const msgEl   = document.getElementById('confirmMsg');
     const okBtn   = document.getElementById('confirmOkBtn');
     if (!overlay) return;
-    title.textContent = 'Trigger Live Send?';
-    msgEl.textContent = 'This will send the newsletter to ALL active subscribers. Cannot be undone.';
+    title.textContent = "Send Today's Newsletter?";
+    msgEl.textContent = 'This will send today\'s issue to ALL active subscribers. Duplicate sends are prevented. Today\'s issue must be complete and live on production.';
     okBtn.onclick = async () => {
       closeConfirm();
-      addLog('Triggering live send…', 'warn');
+      addLog("Triggering today's live send (send_live_today)…", 'warn');
       try {
         const res = await fetch('/api/admin/trigger', {
           method: 'POST',
           headers: authHeaders(),
-          body: JSON.stringify({ mode: 'send_live', confirm_live_send: true }),
+          body: JSON.stringify({ mode: 'send_live_today', confirm_live_send: true }),
         });
         const data = await res.json();
         addLog(data.ok ? `✓ ${data.message}` : `✗ ${data.message}`, data.ok ? 'ok' : 'err');
+        if (data.ok) setTimeout(loadStatus, 5000);
       } catch (e) {
         addLog('Live send error: ' + e.message, 'err');
       }

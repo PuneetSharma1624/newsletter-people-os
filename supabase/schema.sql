@@ -43,6 +43,8 @@ CREATE TABLE IF NOT EXISTS send_log (
     id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     issue_id            UUID REFERENCES newsletter_issues(id) ON DELETE CASCADE,
     subscriber_id       UUID REFERENCES subscribers(id) ON DELETE CASCADE,
+    issue_date          DATE,
+    send_type           TEXT NOT NULL DEFAULT 'live' CHECK (send_type IN ('live', 'test')),
     email               TEXT NOT NULL,
     status              TEXT NOT NULL CHECK (status IN ('sent', 'failed', 'skipped')),
     resend_message_id   TEXT,
@@ -149,3 +151,19 @@ CREATE TABLE IF NOT EXISTS public.admin_notification_state (
 INSERT INTO public.admin_notification_state (id, last_seen_subscriber_at)
 VALUES ('default', NOW())
 ON CONFLICT (id) DO NOTHING;
+
+-- ============================================================
+-- MIGRATION v4: send_log issue_date + send_type (idempotent)
+-- ============================================================
+ALTER TABLE public.send_log ADD COLUMN IF NOT EXISTS issue_date DATE;
+ALTER TABLE public.send_log ADD COLUMN IF NOT EXISTS send_type TEXT NOT NULL DEFAULT 'live'
+    CHECK (send_type IN ('live', 'test'));
+
+CREATE INDEX IF NOT EXISTS idx_send_log_issue_date ON public.send_log (issue_date);
+CREATE INDEX IF NOT EXISTS idx_send_log_send_type  ON public.send_log (send_type);
+
+-- Backfill issue_date from newsletter_issues join
+UPDATE public.send_log sl
+SET issue_date = ni.issue_date
+FROM public.newsletter_issues ni
+WHERE sl.issue_id = ni.id AND sl.issue_date IS NULL;

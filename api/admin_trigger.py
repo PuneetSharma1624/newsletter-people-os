@@ -8,7 +8,10 @@ import os
 import urllib.request
 import urllib.error
 
-VALID_MODES = {"generate_today", "dry_run", "test_email", "send_live", "backfill_initial"}
+VALID_MODES = {
+    "generate_today", "dry_run", "test_email", "send_live", "backfill_initial",
+    "check_today", "ensure_today", "send_live_today", "check_production",
+}
 
 
 class handler(BaseHTTPRequestHandler):
@@ -71,21 +74,33 @@ class handler(BaseHTTPRequestHandler):
     def _trigger_github_workflow(self, mode, test_email="", force=False):
         owner = os.getenv("GITHUB_OWNER", "")
         repo = os.getenv("GITHUB_REPO", "")
-        workflow = os.getenv("GITHUB_WORKFLOW_FILE", "daily-brief.yml")
         pat = os.getenv("GITHUB_PAT_FOR_WORKFLOW_DISPATCH", "")
         branch = os.getenv("GITHUB_DEFAULT_BRANCH", "main")
 
         if not all([owner, repo, pat]):
             return False, "GitHub dispatch not configured (GITHUB_OWNER, GITHUB_REPO, GITHUB_PAT_FOR_WORKFLOW_DISPATCH missing)"
 
+        # Route to correct workflow file based on mode
+        if mode in ("check_today", "ensure_today", "check_production"):
+            workflow = "check-and-retry-0715.yml"
+        elif mode == "send_live_today":
+            workflow = "send-newsletter-0730.yml"
+        else:
+            workflow = os.getenv("GITHUB_WORKFLOW_FILE", "generate-brief-0700.yml")
+
         url = f"https://api.github.com/repos/{owner}/{repo}/actions/workflows/{workflow}/dispatches"
+
+        # Build inputs per workflow
+        if workflow == "generate-brief-0700.yml":
+            inputs = {"force": "true" if force else "false"}
+        elif workflow == "send-newsletter-0730.yml":
+            inputs = {"send_live": "true" if mode == "send_live_today" else "false"}
+        else:
+            inputs = {}
+
         payload = {
             "ref": branch,
-            "inputs": {
-                "mode": mode,
-                "test_email": test_email,
-                "force": "true" if force else "false",
-            },
+            "inputs": inputs,
         }
         data = json.dumps(payload).encode()
         req = urllib.request.Request(

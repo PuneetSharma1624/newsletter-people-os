@@ -290,12 +290,16 @@
 
     <p class="section-label">System Status</p>
     <div class="status-grid">
-      <div class="stat-card"><div class="stat-label">Today</div><div class="stat-value" id="statToday">—</div></div>
+      <div class="stat-card"><div class="stat-label">Today (IST)</div><div class="stat-value" id="statToday">—</div></div>
       <div class="stat-card"><div class="stat-label">Today's Issue</div><div class="stat-value" id="statTodayExists">—</div></div>
-      <div class="stat-card"><div class="stat-label">Latest Issue</div><div class="stat-value" id="statLatest">—</div></div>
+      <div class="stat-card"><div class="stat-label">Latest Complete</div><div class="stat-value" id="statLatest">—</div></div>
       <div class="stat-card"><div class="stat-label">Generation</div><div class="stat-value" id="statGenStatus">—</div></div>
+      <div class="stat-card"><div class="stat-label">7:00 Run</div><div class="stat-value" id="stat0700">—</div></div>
+      <div class="stat-card"><div class="stat-label">7:15 Retry</div><div class="stat-value" id="stat0715">—</div></div>
+      <div class="stat-card"><div class="stat-label">Production</div><div class="stat-value" id="statProduction">—</div></div>
+      <div class="stat-card"><div class="stat-label">Email Sent</div><div class="stat-value" id="statEmailSent">—</div></div>
       <div class="stat-card"><div class="stat-label">Total Archived</div><div class="stat-value" id="statCount">—</div></div>
-      <div class="stat-card"><div class="stat-label">GitHub Dispatch</div><div class="stat-value" id="statGithub">—</div></div>
+      <div class="stat-card"><div class="stat-label">Last Error</div><div class="stat-value fail" id="statLastError" style="font-size:0.72rem;word-break:break-word;">—</div></div>
     </div>
 
     <div class="github-note" id="githubNote" style="display:none;">
@@ -307,12 +311,13 @@
 
     <p class="section-label">Actions</p>
     <div class="btn-grid">
-      <button class="action-btn" onclick="trigger('generate_today')"><span class="btn-icon">⚡</span>Generate Today's Brief</button>
-      <button class="action-btn" onclick="trigger('generate_today', true)"><span class="btn-icon">🔄</span>Force Regenerate</button>
+      <button class="action-btn" onclick="trigger('check_today')"><span class="btn-icon">🔎</span>Check Today's Brief</button>
+      <button class="action-btn" onclick="trigger('ensure_today')"><span class="btn-icon">⚡</span>Retry Today's Generation</button>
+      <button class="action-btn" onclick="trigger('generate_today', true)"><span class="btn-icon">🔄</span>Force Regenerate Today</button>
+      <button class="action-btn" onclick="trigger('check_production')"><span class="btn-icon">🌐</span>Check Production Availability</button>
+      <button class="action-btn danger" onclick="confirmLiveSend()"><span class="btn-icon">🚀</span>Send Today's Newsletter</button>
       <button class="action-btn" onclick="triggerTest()"><span class="btn-icon">📧</span>Send Test Email</button>
-      <button class="action-btn danger" onclick="confirmLiveSend()"><span class="btn-icon">🚀</span>Trigger Live Send</button>
       <button class="action-btn" onclick="trigger('backfill_initial')"><span class="btn-icon">📦</span>Backfill 3 Days</button>
-      <button class="action-btn" onclick="trigger('dry_run')"><span class="btn-icon">🔍</span>Dry Run</button>
       <button class="action-btn" onclick="refreshIndex()"><span class="btn-icon">🗂</span>Refresh Archive Index</button>
     </div>
 

@@ -27,7 +27,9 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 
 def _today() -> str:
-    return datetime.date.today().isoformat()
+    """IST date (UTC+5:30) — what today means in India."""
+    ist = datetime.timezone(datetime.timedelta(hours=5, minutes=30))
+    return datetime.datetime.now(ist).date().isoformat()
 
 
 def _fmt_date(iso: str) -> str:
@@ -481,6 +483,235 @@ def _run_audit_links() -> None:
         print()
 
 
+# ─── NEW RELIABILITY COMMANDS ────────────────────────────────────────────────
+
+def _run_check_today() -> None:
+    from newsletter.static_publisher import validate_issue_complete
+    from newsletter.logger import log
+
+    date = _today()
+    print(f"=== Check Today: {date} ===")
+    result = validate_issue_complete(date)
+
+    print(f"  exists           : {result['exists']}")
+    print(f"  valid_json       : {result.get('valid_json', False)}")
+    print(f"  sections         : {result['sections']}")
+    print(f"  dashboard_items  : {result['dashboard_items']}")
+    print(f"  email_items      : {result['email_items']}")
+    print(f"  in_dates_json    : {result['in_dates_json']}")
+    print(f"  in_archive_json  : {result['in_archive_json']}")
+    print(f"  status_complete  : {result['status_complete']}")
+
+    if result["errors"]:
+        print(f"\n  ERRORS ({len(result['errors'])}):")
+        for e in result["errors"]:
+            print(f"    - {e}")
+
+    if result["ok"]:
+        print(f"\n[OK] Today's issue ({date}) is COMPLETE.")
+        sys.exit(0)
+    else:
+        print(f"\n[FAIL] Today's issue ({date}) is INCOMPLETE.")
+        sys.exit(1)
+
+
+def _run_ensure_today(admin_force: bool = False) -> None:
+    from newsletter import config
+    from newsletter.logger import log
+    from newsletter.static_publisher import validate_issue_complete, get_status, set_status
+
+    config.validate_config(["GROQ_API_KEY_1", "TAVILY_API_KEY"])
+    date = _today()
+    print(f"=== Ensure Today: {date} ===")
+
+    # Check if complete
+    result = validate_issue_complete(date)
+    if result["ok"]:
+        print(f"Today's issue already complete. Skipping generation.")
+        set_status("skipped_already_complete", current_date=date)
+        sys.exit(0)
+
+    # Check if in_progress and fresh (< 30 min) — don't double-generate
+    s = get_status()
+    if not admin_force and s.get("generation_status") in ("in_progress", "running"):
+        started = s.get("generation_started_at_utc") or s.get("last_started_at")
+        if started:
+            try:
+                import datetime as dt_mod
+                start_dt = dt_mod.datetime.fromisoformat(started.rstrip("Z")).replace(
+                    tzinfo=dt_mod.timezone.utc
+                )
+                age_min = (dt_mod.datetime.now(dt_mod.timezone.utc) - start_dt).total_seconds() / 60
+                if age_min < 30:
+                    print(f"Generation is in_progress (started {age_min:.1f}m ago). Skipping to avoid duplicate.")
+                    print("Use --force to override, or wait 30 minutes.")
+                    sys.exit(0)
+                elif age_min < 45:
+                    print(f"Generation in_progress but {age_min:.1f}m ago — waiting to be safe.")
+                    sys.exit(0)
+                else:
+                    print(f"Generation in_progress but stale ({age_min:.1f}m ago). Forcing retry.")
+            except Exception:
+                pass
+
+    # Mark attempt
+    attempt = "retry_0715" if os.getenv("GENERATION_ATTEMPT") == "retry_0715" else "ensure"
+    set_status("retrying", current_date=date, attempt=attempt)
+
+    # Run generation
+    issue = _generate_issue(date, dry_run=False, force=True, save=True)
+    if not issue:
+        log.error("Generation failed in --ensure-today")
+        set_status("failed", current_date=date, error="Generation returned None")
+        sys.exit(1)
+
+    # Validate again
+    result2 = validate_issue_complete(date)
+    if result2["ok"]:
+        print(f"[OK] Today's issue ({date}) generated and validated successfully.")
+        sys.exit(0)
+    else:
+        print(f"[FAIL] Issue generated but validation failed:")
+        for e in result2["errors"]:
+            print(f"  - {e}")
+        sys.exit(1)
+
+
+def _run_send_live_today() -> None:
+    from newsletter import config
+    from newsletter.logger import log, log_mode, log_subscribers, log_summary
+    from newsletter.sender import send_to_subscriber
+    from newsletter.static_publisher import (
+        load_issue, validate_issue_complete, set_status,
+        check_production_issue_available,
+    )
+    from newsletter.archive import mark_sent
+    from newsletter.subscribers import already_sent_today
+
+    log_mode("send-live-today")
+    config.validate_config()
+
+    date = _today()
+    print(f"=== Send Live Today: {date} ===")
+
+    # Validate issue completeness
+    result = validate_issue_complete(date)
+    if not result["ok"]:
+        print(f"[FAIL] Today's issue ({date}) is NOT complete. Aborting send.")
+        for e in result["errors"]:
+            print(f"  - {e}")
+        set_status(
+            "complete",  # generation might be complete; just update email status
+            email_status="skipped_issue_missing",
+        )
+        sys.exit(1)
+
+    # Check production availability (with retries)
+    max_retries = 5
+    wait_seconds = 120
+    prod_ok = False
+    for attempt in range(1, max_retries + 1):
+        prod = check_production_issue_available(date)
+        if prod["ok"]:
+            prod_ok = True
+            print(f"[OK] Production issue available: {prod['url']}")
+            break
+        print(f"  Production check {attempt}/{max_retries} failed: {prod['errors']}")
+        if attempt < max_retries:
+            print(f"  Waiting {wait_seconds}s before retry...")
+            import time
+            time.sleep(wait_seconds)
+
+    if not prod_ok:
+        print(f"[FAIL] Production issue not available after {max_retries} attempts. Aborting send.")
+        set_status("complete", email_status="skipped_issue_not_deployed")
+        sys.exit(1)
+
+    # Check duplicate send guard
+    if already_sent_today(date):
+        print(f"Today's newsletter already sent. Skipping.")
+        sys.exit(0)
+
+    # Supabase preflight + fetch subscribers
+    subscribers = _supabase_preflight()
+    log_subscribers(len(subscribers))
+    if not subscribers:
+        log.warning("No active subscribers. Exiting.")
+        set_status("complete", email_status="skipped_already_sent")
+        return
+
+    issue = load_issue(date)
+    if not issue:
+        log.error("Failed to load issue")
+        sys.exit(1)
+
+    # Ensure issue_date in issue is today
+    if issue.get("issue_date") != date:
+        log.error(f"Issue date mismatch: issue has {issue.get('issue_date')}, expected {date}. Aborting.")
+        sys.exit(1)
+
+    # Render and save to DB
+    try:
+        from newsletter import archive as arc
+        from newsletter.renderer import render_html_email, render_text_email
+        base_url = config.base_url()
+        placeholder = f"{base_url}/api/unsubscribe?token=PLACEHOLDER"
+        html = render_html_email(issue, placeholder, base_url)
+        text = render_text_email(issue, placeholder, base_url)
+        db_issue = arc.save_issue(issue, html, text)
+        issue_id = db_issue["id"]
+    except Exception as exc:
+        log.warning(f"DB save skipped: {exc}")
+        issue_id = f"static-{date}"
+
+    sent = failed = skipped = 0
+    utc_now = datetime.datetime.now(datetime.timezone.utc).isoformat().replace("+00:00", "Z")
+
+    for sub in subscribers:
+        result2 = send_to_subscriber(sub, issue, issue_id, is_test=False)
+        if result2.get("skipped"):
+            skipped += 1
+        elif result2["ok"]:
+            sent += 1
+        else:
+            failed += 1
+
+    log_summary(sent, failed, skipped)
+
+    if sent > 0 or skipped > 0:
+        try:
+            mark_sent(issue_id)
+        except Exception:
+            pass
+        set_status(
+            "complete",
+            email_date=date,
+            email_status="sent",
+            email_sent_at_utc=utc_now,
+        )
+
+    if failed > 0 and sent == 0 and skipped == 0:
+        set_status("complete", email_date=date, email_status="failed")
+        log.error("All sends failed.")
+        sys.exit(1)
+
+
+def _run_mark_generation_started() -> None:
+    from newsletter.static_publisher import set_status
+    date = _today()
+    run_id = os.getenv("GITHUB_RUN_ID", "")
+    attempt = os.getenv("GENERATION_ATTEMPT", "scheduled_0700")
+    set_status("running", current_date=date, run_id=run_id or None, attempt=attempt)
+    print(f"Marked generation started for {date} (run_id={run_id}, attempt={attempt})")
+
+
+def _run_mark_generation_failed(error: str = "") -> None:
+    from newsletter.static_publisher import set_status
+    date = _today()
+    set_status("failed", current_date=date, error=error or "Marked failed via CLI")
+    print(f"Marked generation failed for {date}")
+
+
 # ─── ARGPARSE ────────────────────────────────────────────────────────────────
 
 def main() -> None:
@@ -499,8 +730,16 @@ def main() -> None:
     group.add_argument("--seed-demo", action="store_true", help="Seed demo data if no issues exist.")
     group.add_argument("--refresh-index", action="store_true", help="Rebuild archive.json and dates.json.")
     group.add_argument("--audit-links", action="store_true", help="Scan all issue JSON files for homepage/missing source URLs.")
+    # ── Reliability commands ──
+    group.add_argument("--check-today", action="store_true", help="Validate today's issue completeness. Exit 0=ok, 1=fail.")
+    group.add_argument("--ensure-today", action="store_true", help="Generate today's issue only if missing/incomplete.")
+    group.add_argument("--send-live-today", action="store_true", help="Send today's newsletter only if issue is complete.")
+    group.add_argument("--mark-generation-started", action="store_true", help="Write in_progress to status.json.")
+    group.add_argument("--mark-generation-failed", action="store_true", help="Write failed to status.json.")
 
     parser.add_argument("--force", action="store_true", help="Force operation even if issue already exists.")
+    parser.add_argument("--admin-force", action="store_true", help="Skip in_progress guard in --ensure-today.")
+    parser.add_argument("--error-msg", metavar="MSG", default="", help="Error message for --mark-generation-failed.")
 
     args = parser.parse_args()
 
@@ -522,6 +761,16 @@ def main() -> None:
         _run_refresh_index()
     elif args.audit_links:
         _run_audit_links()
+    elif args.check_today:
+        _run_check_today()
+    elif args.ensure_today:
+        _run_ensure_today(admin_force=args.admin_force or args.force)
+    elif args.send_live_today:
+        _run_send_live_today()
+    elif args.mark_generation_started:
+        _run_mark_generation_started()
+    elif args.mark_generation_failed:
+        _run_mark_generation_failed(error=args.error_msg)
 
 
 if __name__ == "__main__":
