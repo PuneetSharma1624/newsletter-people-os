@@ -34,8 +34,8 @@
   function setLoading(on) {
     submitBtn.disabled  = on;
     emailInput.disabled = on;
-    if (btnText)   btnText.hidden   = on;
-    if (btnLoader) btnLoader.hidden = !on;
+    if (btnText)   btnText.style.display   = on ? 'none' : '';
+    if (btnLoader) btnLoader.style.display = on ? 'inline-block' : 'none';
   }
 
   function showMessage(text, type) {

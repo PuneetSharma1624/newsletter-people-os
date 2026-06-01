@@ -1,5 +1,6 @@
-"""POST /api/subscribe — validate email, upsert subscriber.
+"""POST /api/subscribe — validate email, upsert subscriber via Supabase client.
 Vercel Python serverless: handler must be BaseHTTPRequestHandler.
+Uses same supabase-py client pattern as newsletter/subscribers.py (known to work).
 NEVER expose SUPABASE_SERVICE_ROLE_KEY to frontend.
 """
 from http.server import BaseHTTPRequestHandler
@@ -12,20 +13,11 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 
 def _is_valid_email(email: str) -> bool:
-    return bool(re.match(r'^[^\s@]+@[^\s@]+\.[^\s@]+$', email.strip()))
+    return bool(re.match(r'^[^\s@]+@[^\s@]+\.[^\s@]{2,}$', email.strip()))
 
 
-def _normalize_email(email: str) -> str:
+def _normalize(email: str) -> str:
     return email.strip().lower()
-
-
-def _sb_headers(key: str) -> dict:
-    return {
-        'apikey': key,
-        'Authorization': f'Bearer {key}',
-        'Content-Type': 'application/json',
-        'Prefer': 'return=representation',
-    }
 
 
 class handler(BaseHTTPRequestHandler):
@@ -46,19 +38,19 @@ class handler(BaseHTTPRequestHandler):
             return
 
         email_raw = body.get('email', '')
-        source = body.get('source', 'web') or 'web'
+        source = str(body.get('source', 'web') or 'web')[:64]
 
         if not email_raw or not isinstance(email_raw, str):
             self._json({'ok': False, 'error': 'Please enter a valid email address.'}, 400)
             return
 
-        email = _normalize_email(email_raw)
+        email = _normalize(email_raw)
         if not _is_valid_email(email):
             self._json({'ok': False, 'error': 'Please enter a valid email address.'}, 400)
             return
 
-        # Check Supabase config
-        sb_url = os.environ.get('SUPABASE_URL', '').strip().rstrip('/')
+        # Validate Supabase config
+        sb_url = os.environ.get('SUPABASE_URL', '').strip()
         sb_key = os.environ.get('SUPABASE_SERVICE_ROLE_KEY', '').strip()
         if not sb_url or not sb_key:
             self._json({
@@ -68,22 +60,20 @@ class handler(BaseHTTPRequestHandler):
             return
 
         try:
-            import urllib.request, urllib.error, secrets
+            import secrets
+            from supabase import create_client
 
-            # Check if subscriber exists
-            import urllib.parse
-            check_url = (
-                f"{sb_url}/rest/v1/subscribers"
-                f"?select=id,email,status"
-                f"&email=eq.{urllib.parse.quote(email)}"
-                f"&limit=1"
+            client = create_client(sb_url, sb_key)
+
+            # Check existing subscriber
+            result = (
+                client.table('subscribers')
+                .select('id, email, status')
+                .eq('email', email)
+                .limit(1)
+                .execute()
             )
-            req = urllib.request.Request(
-                check_url,
-                headers={**_sb_headers(sb_key), 'Accept': 'application/json'},
-            )
-            with urllib.request.urlopen(req, timeout=8) as resp:
-                existing = json.loads(resp.read())
+            existing = result.data
 
             if existing:
                 row = existing[0]
@@ -92,59 +82,57 @@ class handler(BaseHTTPRequestHandler):
                     return
                 # Reactivate unsubscribed
                 token = secrets.token_urlsafe(32)
-                patch_url = f"{sb_url}/rest/v1/subscribers?id=eq.{row['id']}"
-                patch_req = urllib.request.Request(
-                    patch_url,
-                    data=json.dumps({'status': 'active', 'unsubscribe_token': token}).encode(),
-                    headers={**_sb_headers(sb_key), 'Prefer': 'return=minimal'},
-                    method='PATCH',
-                )
-                with urllib.request.urlopen(patch_req, timeout=8):
-                    pass
+                client.table('subscribers').update({
+                    'status': 'active',
+                    'unsubscribe_token': token,
+                    'unsubscribed_at': None,
+                }).eq('id', row['id']).execute()
                 self._json({'ok': True, 'message': 'Subscribed successfully.'})
                 return
 
             # Insert new subscriber
             token = secrets.token_urlsafe(32)
-            insert_url = f"{sb_url}/rest/v1/subscribers"
-            insert_req = urllib.request.Request(
-                insert_url,
-                data=json.dumps({
+            try:
+                client.table('subscribers').insert({
                     'email': email,
                     'status': 'active',
-                    'source': str(source)[:64],
+                    'source': source,
                     'unsubscribe_token': token,
-                }).encode(),
-                headers={**_sb_headers(sb_key), 'Prefer': 'return=minimal'},
-                method='POST',
-            )
-            try:
-                with urllib.request.urlopen(insert_req, timeout=8):
-                    pass
+                }).execute()
                 self._json({'ok': True, 'message': 'Subscribed successfully.'})
-            except urllib.error.HTTPError as exc:
-                err_body = exc.read().decode('utf-8', errors='replace')
-                if exc.code == 409 or 'duplicate' in err_body.lower() or 'unique' in err_body.lower():
+            except Exception as insert_exc:
+                err = str(insert_exc).lower()
+                if 'duplicate' in err or 'unique' in err or '23505' in err:
                     self._json({'ok': True, 'message': 'You are already subscribed.'})
-                elif 'does not exist' in err_body.lower() or 'relation' in err_body.lower():
+                else:
                     self._json({
                         'ok': False,
-                        'error': 'Subscriber table not found. Run supabase/schema.sql first.',
-                    }, 503)
-                else:
-                    self._json({'ok': False, 'error': f'Database error ({exc.code}).'}, 500)
+                        'error': f'Database insert failed: {str(insert_exc)[:200]}',
+                    }, 500)
 
         except Exception as exc:
             err = str(exc)
-            if 'does not exist' in err.lower() or 'relation' in err.lower():
+            err_lower = err.lower()
+            if 'does not exist' in err_lower or 'relation' in err_lower or '42p01' in err_lower:
                 self._json({
                     'ok': False,
-                    'error': 'Subscriber table not found. Run supabase/schema.sql first.',
+                    'error': 'Subscriber table not found. Run supabase/schema.sql in Supabase SQL editor.',
                 }, 503)
-            elif 'name or service not known' in err.lower() or 'connection' in err.lower():
-                self._json({'ok': False, 'error': 'Cannot reach database. Check SUPABASE_URL.'}, 503)
+            elif 'invalid api key' in err_lower or 'jwt' in err_lower or '401' in err_lower:
+                self._json({
+                    'ok': False,
+                    'error': 'Supabase authentication failed. Check SUPABASE_SERVICE_ROLE_KEY.',
+                }, 503)
+            elif 'connection' in err_lower or 'timeout' in err_lower or 'network' in err_lower:
+                self._json({
+                    'ok': False,
+                    'error': 'Cannot reach database. Check SUPABASE_URL.',
+                }, 503)
             else:
-                self._json({'ok': False, 'error': 'Something went wrong. Please try again.'}, 500)
+                self._json({
+                    'ok': False,
+                    'error': f'Subscription error: {err[:300]}',
+                }, 500)
 
     def _cors(self):
         self.send_header('Access-Control-Allow-Origin', '*')
