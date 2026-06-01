@@ -419,16 +419,21 @@
   async function recordVisit() {
     try {
       const res = await fetch('/api/analytics/visit', { method: 'POST' });
-      if (!res.ok) return;
-      const data = await res.json();
-      if (data.ok) {
-        const vEl = document.getElementById('kpiVisitorsVal');
-        const sEl = document.getElementById('kpiSubscribersVal');
-        if (vEl && data.total_visits   > 0) vEl.textContent = data.total_visits.toLocaleString();
-        if (sEl && data.total_subscribers >= 0) sEl.textContent = data.total_subscribers.toLocaleString();
+      const data = res.ok ? await res.json().catch(() => null) : null;
+      const vEl = document.getElementById('kpiVisitorsVal');
+      const sEl = document.getElementById('kpiSubscribersVal');
+      if (data && data.ok) {
+        if (vEl) vEl.textContent = (data.total_visits ?? 0).toLocaleString();
+        if (sEl) sEl.textContent = (data.total_subscribers ?? 0).toLocaleString();
+      } else {
+        if (vEl && vEl.textContent === '—') vEl.textContent = 'Unavailable';
+        if (sEl && sEl.textContent === '—') sEl.textContent = 'Unavailable';
       }
     } catch (_) {
-      // silent — never block dashboard on analytics failure
+      const vEl = document.getElementById('kpiVisitorsVal');
+      const sEl = document.getElementById('kpiSubscribersVal');
+      if (vEl && vEl.textContent === '—') vEl.textContent = 'Unavailable';
+      if (sEl && sEl.textContent === '—') sEl.textContent = 'Unavailable';
     }
   }
 

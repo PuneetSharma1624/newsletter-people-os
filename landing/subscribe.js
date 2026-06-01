@@ -64,29 +64,36 @@
 
     setLoading(true);
 
+    let succeeded = false;
     try {
       const res = await fetch('/api/subscribe', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email, source: 'dashboard' }),
       });
 
-      const data = await res.json();
+      let data;
+      try { data = await res.json(); }
+      catch (_) { data = null; }
 
-      if (data.ok) {
+      if (data && data.ok) {
         showMessage(data.message || "You're subscribed!", 'success');
-        emailInput.value   = '';
-        submitBtn.textContent = '✓ Subscribed';
+        emailInput.value = '';
+        submitBtn.textContent = 'Subscribed';
         submitBtn.disabled = true;
-        // Refresh count after successful subscribe
+        succeeded = true;
         setTimeout(loadReaderCount, 800);
+      } else if (data && (data.error || data.message)) {
+        showMessage(data.error || data.message, 'error');
+      } else if (!res.ok) {
+        showMessage('Subscription failed (server error). Please try again.', 'error');
       } else {
-        showMessage(data.message || 'Something went wrong. Please try again.', 'error');
-        setLoading(false);
+        showMessage('Something went wrong. Please try again.', 'error');
       }
     } catch (err) {
-      showMessage('Network error. Please check your connection and try again.', 'error');
-      setLoading(false);
+      showMessage('Cannot reach server. Please check your connection.', 'error');
+    } finally {
+      if (!succeeded) setLoading(false);
     }
   });
 })();

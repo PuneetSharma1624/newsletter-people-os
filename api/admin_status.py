@@ -19,7 +19,8 @@ class handler(BaseHTTPRequestHandler):
             self._json({"ok": False, "message": "Unauthorized"}, 401)
             return
 
-        today = datetime.date.today().isoformat()
+        ist = datetime.timezone(datetime.timedelta(hours=5, minutes=30))
+        today = datetime.datetime.now(ist).date().isoformat()
 
         try:
             import sys

@@ -1,82 +1,167 @@
+"""POST /api/subscribe — validate email, upsert subscriber.
+Vercel Python serverless: handler must be BaseHTTPRequestHandler.
+NEVER expose SUPABASE_SERVICE_ROLE_KEY to frontend.
 """
-Vercel serverless function — POST /api/subscribe
-Accepts JSON: {"email": "..."} — validates, normalizes, upserts subscriber.
-NEVER expose SUPABASE_SERVICE_ROLE_KEY to frontend. This file is server-side only.
-"""
-from __future__ import annotations
-
+from http.server import BaseHTTPRequestHandler
 import json
 import os
+import re
 import sys
 
-# Allow imports from repo root when running locally
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from newsletter.utils import normalize_email, is_valid_email, generate_token
-from newsletter.logger import log
+
+def _is_valid_email(email: str) -> bool:
+    return bool(re.match(r'^[^\s@]+@[^\s@]+\.[^\s@]+$', email.strip()))
 
 
-def _cors_headers() -> dict:
+def _normalize_email(email: str) -> str:
+    return email.strip().lower()
+
+
+def _sb_headers(key: str) -> dict:
     return {
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Methods": "POST, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type",
-        "Content-Type": "application/json",
+        'apikey': key,
+        'Authorization': f'Bearer {key}',
+        'Content-Type': 'application/json',
+        'Prefer': 'return=representation',
     }
 
 
-def _json(body: dict, status: int = 200):
-    return {"statusCode": status, "headers": _cors_headers(), "body": json.dumps(body)}
+class handler(BaseHTTPRequestHandler):
+
+    def do_OPTIONS(self):
+        self.send_response(200)
+        self._cors()
+        self.end_headers()
+
+    def do_POST(self):
+        # Parse body
+        try:
+            length = int(self.headers.get('Content-Length') or 0)
+            raw = self.rfile.read(length) if length > 0 else b''
+            body = json.loads(raw) if raw else {}
+        except Exception:
+            self._json({'ok': False, 'error': 'Invalid request body.'}, 400)
+            return
+
+        email_raw = body.get('email', '')
+        source = body.get('source', 'web') or 'web'
+
+        if not email_raw or not isinstance(email_raw, str):
+            self._json({'ok': False, 'error': 'Please enter a valid email address.'}, 400)
+            return
+
+        email = _normalize_email(email_raw)
+        if not _is_valid_email(email):
+            self._json({'ok': False, 'error': 'Please enter a valid email address.'}, 400)
+            return
+
+        # Check Supabase config
+        sb_url = os.environ.get('SUPABASE_URL', '').strip().rstrip('/')
+        sb_key = os.environ.get('SUPABASE_SERVICE_ROLE_KEY', '').strip()
+        if not sb_url or not sb_key:
+            self._json({
+                'ok': False,
+                'error': 'Subscription service is not configured. Missing Supabase environment variables.',
+            }, 503)
+            return
+
+        try:
+            import urllib.request, urllib.error, secrets
+
+            # Check if subscriber exists
+            import urllib.parse
+            check_url = (
+                f"{sb_url}/rest/v1/subscribers"
+                f"?select=id,email,status"
+                f"&email=eq.{urllib.parse.quote(email)}"
+                f"&limit=1"
+            )
+            req = urllib.request.Request(
+                check_url,
+                headers={**_sb_headers(sb_key), 'Accept': 'application/json'},
+            )
+            with urllib.request.urlopen(req, timeout=8) as resp:
+                existing = json.loads(resp.read())
+
+            if existing:
+                row = existing[0]
+                if row.get('status') == 'active':
+                    self._json({'ok': True, 'message': 'You are already subscribed.'})
+                    return
+                # Reactivate unsubscribed
+                token = secrets.token_urlsafe(32)
+                patch_url = f"{sb_url}/rest/v1/subscribers?id=eq.{row['id']}"
+                patch_req = urllib.request.Request(
+                    patch_url,
+                    data=json.dumps({'status': 'active', 'unsubscribe_token': token}).encode(),
+                    headers={**_sb_headers(sb_key), 'Prefer': 'return=minimal'},
+                    method='PATCH',
+                )
+                with urllib.request.urlopen(patch_req, timeout=8):
+                    pass
+                self._json({'ok': True, 'message': 'Subscribed successfully.'})
+                return
+
+            # Insert new subscriber
+            token = secrets.token_urlsafe(32)
+            insert_url = f"{sb_url}/rest/v1/subscribers"
+            insert_req = urllib.request.Request(
+                insert_url,
+                data=json.dumps({
+                    'email': email,
+                    'status': 'active',
+                    'source': str(source)[:64],
+                    'unsubscribe_token': token,
+                }).encode(),
+                headers={**_sb_headers(sb_key), 'Prefer': 'return=minimal'},
+                method='POST',
+            )
+            try:
+                with urllib.request.urlopen(insert_req, timeout=8):
+                    pass
+                self._json({'ok': True, 'message': 'Subscribed successfully.'})
+            except urllib.error.HTTPError as exc:
+                err_body = exc.read().decode('utf-8', errors='replace')
+                if exc.code == 409 or 'duplicate' in err_body.lower() or 'unique' in err_body.lower():
+                    self._json({'ok': True, 'message': 'You are already subscribed.'})
+                elif 'does not exist' in err_body.lower() or 'relation' in err_body.lower():
+                    self._json({
+                        'ok': False,
+                        'error': 'Subscriber table not found. Run supabase/schema.sql first.',
+                    }, 503)
+                else:
+                    self._json({'ok': False, 'error': f'Database error ({exc.code}).'}, 500)
+
+        except Exception as exc:
+            err = str(exc)
+            if 'does not exist' in err.lower() or 'relation' in err.lower():
+                self._json({
+                    'ok': False,
+                    'error': 'Subscriber table not found. Run supabase/schema.sql first.',
+                }, 503)
+            elif 'name or service not known' in err.lower() or 'connection' in err.lower():
+                self._json({'ok': False, 'error': 'Cannot reach database. Check SUPABASE_URL.'}, 503)
+            else:
+                self._json({'ok': False, 'error': 'Something went wrong. Please try again.'}, 500)
+
+    def _cors(self):
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.send_header('Access-Control-Allow-Headers', 'Content-Type')
+        self.send_header('Access-Control-Allow-Methods', 'POST, OPTIONS')
+
+    def _json(self, body, status=200):
+        payload = json.dumps(body).encode()
+        self.send_response(status)
+        self._cors()
+        self.send_header('Content-Type', 'application/json')
+        self.end_headers()
+        self.wfile.write(payload)
+
+    def log_message(self, *args):
+        pass
 
 
-def handler(request, response=None):
-    """Vercel Python handler."""
-    method = getattr(request, "method", "POST")
-
-    # Handle CORS preflight
-    if method == "OPTIONS":
-        return _json({}, 200)
-
-    if method != "POST":
-        return _json({"ok": False, "message": "Method not allowed."}, 405)
-
-    # Parse body
-    try:
-        body_raw = getattr(request, "body", b"") or b""
-        if isinstance(body_raw, str):
-            body_raw = body_raw.encode()
-        body = json.loads(body_raw) if body_raw else {}
-    except (json.JSONDecodeError, ValueError):
-        return _json({"ok": False, "message": "Invalid request body."}, 400)
-
-    email_raw = body.get("email", "")
-    if not email_raw or not isinstance(email_raw, str):
-        return _json({"ok": False, "message": "Please enter a valid email address."}, 400)
-
-    email = normalize_email(email_raw)
-    if not is_valid_email(email):
-        return _json({"ok": False, "message": "Please enter a valid email address."}, 400)
-
-    # Upsert via subscribers module
-    try:
-        from newsletter import config
-        config.validate_config(["SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY"])
-        from newsletter.subscribers import upsert_subscriber
-        result = upsert_subscriber(email, source="web")
-    except EnvironmentError as exc:
-        log.error(f"Config error in subscribe API: {exc}")
-        return _json({"ok": False, "message": "Service configuration error. Please try again later."}, 500)
-    except Exception as exc:
-        log.error(f"Subscribe error for {email}: {exc}")
-        return _json({"ok": False, "message": "Something went wrong. Please try again."}, 500)
-
-    if result.get("already_active"):
-        return _json({"ok": True, "message": "You're already subscribed to PeopleOS Brief."})
-
-    return _json({"ok": True, "message": "You're subscribed to PeopleOS Brief."})
-
-
-# Vercel Python runtime looks for a top-level 'app', 'application', or 'handler'.
-# Expose all three so any runtime version finds it.
 app = handler
 application = handler
