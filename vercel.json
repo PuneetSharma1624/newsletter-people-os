@@ -1,29 +1,35 @@
 {
   "version": 2,
+  "builds": [
+    { "src": "api/admin.py", "use": "@vercel/python" },
+    { "src": "api/health.py", "use": "@vercel/python" },
+    { "src": "api/stats.py", "use": "@vercel/python" },
+    { "src": "api/visit.py", "use": "@vercel/python" },
+    { "src": "api/subscribe.py", "use": "@vercel/python" },
+    { "src": "api/unsubscribe.py", "use": "@vercel/python" },
+    { "src": "landing/**", "use": "@vercel/static" }
+  ],
   "routes": [
-    { "src": "/style.css",     "dest": "/landing/style.css" },
-    { "src": "/brief.css",     "dest": "/landing/brief.css" },
-    { "src": "/archive.css",   "dest": "/landing/archive.css" },
-    { "src": "/dashboard.js",  "dest": "/landing/dashboard.js" },
-    { "src": "/subscribe.js",  "dest": "/landing/subscribe.js" },
-    { "src": "/archive.js",    "dest": "/landing/archive.js" },
-    { "src": "/admin.js",      "dest": "/landing/admin.js" },
-    { "src": "/brief.js",      "dest": "/landing/brief.js" },
-    { "src": "/data/(.*)",     "dest": "/landing/data/$1" },
-    { "src": "/assets/(.*)",   "dest": "/landing/assets/$1" },
-    { "src": "/api/subscribe",          "dest": "/api/subscribe.py" },
-    { "src": "/api/unsubscribe",        "dest": "/api/unsubscribe.py" },
-    { "src": "/api/stats",              "dest": "/api/stats.py" },
-    { "src": "/api/visit",              "dest": "/api/visit.py" },
-    { "src": "/api/admin",              "dest": "/api/admin.py" },
-    { "src": "/api/health",             "dest": "/api/health.py" },
-    { "src": "/api/public/stats",       "dest": "/api/stats.py" },
-    { "src": "/api/analytics/visit",    "dest": "/api/visit.py" },
-    { "src": "/api/admin/(.+)",         "dest": "/api/admin.py" },
-    { "src": "/brief/?",               "dest": "/landing/brief/index.html" },
-    { "src": "/archive/?",             "dest": "/landing/archive/index.html" },
-    { "src": "/admin/dashboard/?",     "dest": "/landing/admin/dashboard/index.html" },
-    { "src": "/admin/?",               "dest": "/landing/admin/index.html" },
-    { "src": "/",                      "dest": "/landing/index.html" }
+    { "src": "/api/public/stats", "dest": "/api/stats.py" },
+    { "src": "/api/analytics/visit", "dest": "/api/visit.py" },
+
+    { "src": "/api/admin(?:/.*)?", "dest": "/api/admin.py" },
+    { "src": "/api/health", "dest": "/api/health.py" },
+    { "src": "/api/stats", "dest": "/api/stats.py" },
+    { "src": "/api/visit", "dest": "/api/visit.py" },
+    { "src": "/api/subscribe", "dest": "/api/subscribe.py" },
+    { "src": "/api/unsubscribe", "dest": "/api/unsubscribe.py" },
+
+    { "src": "/brief/?", "dest": "/landing/brief/index.html" },
+    { "src": "/archive/?", "dest": "/landing/archive/index.html" },
+    { "src": "/admin/dashboard/?", "dest": "/landing/admin/dashboard/index.html" },
+    { "src": "/admin/?", "dest": "/landing/admin/index.html" },
+
+    { "src": "/data/(.*)", "dest": "/landing/data/$1" },
+    { "src": "/assets/(.*)", "dest": "/landing/assets/$1" },
+    { "src": "/(.*\\.(?:js|css|png|jpg|jpeg|svg|ico|json|webp|woff|woff2))", "dest": "/landing/$1" },
+
+    { "src": "/", "dest": "/landing/index.html" },
+    { "src": "/(.*)", "dest": "/landing/index.html" }
   ]
 }

@@ -1,5 +1,33 @@
 # PeopleOS Brief — Project Handover
 
+## Deployment Fix - 2026-06-05 - Vercel Build Entrypoint Without Admin Hijack
+
+### Error
+Vercel failed with:
+
+`No python entrypoint found in default locations`
+
+### Root Cause
+After removing the project-wide admin entrypoint from `pyproject.toml`, Vercel no longer knew how to build the Python API functions. Restoring `entrypoint = "api.admin:handler"` would risk public `/` hitting the protected admin handler again.
+
+### Fix
+Configured `vercel.json` with explicit builds/routes for the 6 Python API functions and static landing files. Kept `/` mapped to `landing/index.html`. Avoided using admin as global Python entrypoint.
+
+### API Function Count
+Remains 6:
+- api/admin.py
+- api/health.py
+- api/stats.py
+- api/subscribe.py
+- api/unsubscribe.py
+- api/visit.py
+
+### Validation
+- API function count remains 6
+- `/` should serve static dashboard HTML
+- `/api/admin` remains protected
+- `/api/health` should serve health JSON
+
 ## Deployment Fix - 2026-06-05 - Public Root Returning Unauthorized
 
 ### Error
