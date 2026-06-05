@@ -35,7 +35,8 @@
       "Bash(sed -i \"s|/api/public/stats|/api/stats|g\" landing/admin.js)",
       "Bash(sed -i \"s|/api/admin/login|/api/admin?action=status|g\" landing/admin.html)",
       "Bash(python -m compileall api/ -q)",
-      "Bash(python -m pytest tests/test_idempotency.py -q)"
+      "Bash(python -m pytest tests/test_idempotency.py -q)",
+      "Bash(python -m compileall api -q)"
     ]
   }
 }
