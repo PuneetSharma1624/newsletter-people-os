@@ -1,5 +1,36 @@
 # PeopleOS Brief — Project Handover
 
+## Deployment Fix - 2026-06-05 - Vercel `pyproject.toml` / `uv lock`
+
+### Error
+Vercel failed with:
+
+`No project table found in pyproject.toml`
+
+### Root Cause
+`pyproject.toml` existed for Vercel Python entrypoint configuration, but it did not contain a valid `[project]` table. Vercel/uv therefore could not resolve Python dependencies during build.
+
+### Fix
+Added a valid `[project]` table with project metadata, Python version, and runtime dependencies from `requirements.txt`. Preserved `[tool.vercel]` entrypoint configuration.
+
+### API Function Count
+Remains 6:
+
+- api/subscribe.py
+- api/unsubscribe.py
+- api/stats.py
+- api/visit.py
+- api/admin.py
+- api/health.py
+
+### Validation
+- API count verified as 6
+- Local `python`/`py` unavailable, so `compileall` could not run in this workspace.
+- Local `uv` unavailable, so `uv lock` could not run and no `uv.lock` was regenerated.
+
+### Remaining Risk
+Vercel deployment should now move past the `uv lock` / `pyproject.toml` error. Any next error should be treated separately.
+
 ---
 
 ## ✅ Architecture Changes (2026-06-05)
