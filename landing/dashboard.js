@@ -75,6 +75,8 @@
     showLoading();
     const issue = await fetchIssue(date);
     if (!issue) { showEmpty(); currentDate=date; setURLParams({date,section:activeSection==='all'?null:activeSection}); return; }
+    console.log('PeopleOS: loaded issue =', date, '| sections:', (issue.sections||[]).length, '| items:', issue.total_dashboard_items||0);
+    document.title = `PeopleOS Brief — ${date}`;
     currentIssue = issue;
     renderIssue(issue);
     currentDate = date;
@@ -89,7 +91,22 @@
     if (!dates||dates.length===0) { showEmpty(); return; }
     const today = todayISO();
     const target = dates.includes(today) ? today : dates[0];
+    console.log('PeopleOS: latest available date =', target);
     await loadForDate(target);
+  }
+
+  // ─── DATE WARNING ───────────────────────────────────────
+  function showDateWarning(requestedDate, latestDate) {
+    const bar = document.getElementById('dateBar');
+    if (!bar) return;
+    const existing = document.getElementById('dateWarning');
+    if (existing) existing.remove();
+    const el = document.createElement('div');
+    el.id = 'dateWarning';
+    el.style.cssText = 'background:rgba(249,115,22,0.12);border:1px solid rgba(249,115,22,0.3);color:#fdba74;font-size:0.8rem;padding:8px 16px;text-align:center;display:flex;align-items:center;justify-content:center;gap:12px;';
+    el.innerHTML = `⚠ Requested issue <strong>${requestedDate}</strong> is archived or unavailable. Showing latest available brief instead.` +
+      ` <button onclick="document.getElementById('dateWarning').remove()" style="background:none;border:none;color:#fdba74;cursor:pointer;font-size:0.9rem;">✕</button>`;
+    bar.insertAdjacentElement('beforebegin', el);
   }
 
   // ─── STATES ─────────────────────────────────────────────
@@ -396,8 +413,19 @@
     if (urlSection && urlSection!=='all') activeSection = urlSection;
 
     const urlDate = getURLParam('date');
+    console.log('PeopleOS: requested date =', urlDate || '(none)');
+
     if (urlDate) {
-      await loadForDate(urlDate);
+      // Validate date exists; if not, fallback to latest with warning
+      if (availableDates.length > 0 && !availableDates.includes(urlDate)) {
+        const latest = availableDates[0];
+        console.log('PeopleOS: requested date not available, falling back to', latest);
+        showDateWarning(urlDate, latest);
+        setURLParams({date: null, section: urlSection && urlSection!=='all' ? urlSection : null});
+        await loadLatest();
+      } else {
+        await loadForDate(urlDate);
+      }
     } else {
       await loadLatest();
     }
@@ -418,22 +446,29 @@
 
   async function recordVisit() {
     try {
-      const res = await fetch('/api/analytics/visit', { method: 'POST' });
+      const res = await fetch('/api/analytics/visit', { method: 'POST', cache: 'no-store' });
       const data = res.ok ? await res.json().catch(() => null) : null;
-      const vEl = document.getElementById('kpiVisitorsVal');
-      const sEl = document.getElementById('kpiSubscribersVal');
+      const ids = ['kpiVisitorsVal', 'kpiSubscribersVal', 'kpiPageViewsVal', 'kpiUniqueVisitorsVal'];
+      ids.forEach(id => { if (!document.getElementById(id)) console.warn('PeopleOS: missing element #' + id); });
+
       if (data && data.ok) {
-        if (vEl) vEl.textContent = (data.total_visits ?? 0).toLocaleString();
-        if (sEl) sEl.textContent = (data.total_subscribers ?? 0).toLocaleString();
+        const pv = data.total_page_views ?? data.total_visits ?? 0;
+        const uv = data.unique_visitors_today ?? 0;
+        const sb = data.total_subscribers ?? 0;
+        const setEl = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val.toLocaleString(); };
+        setEl('kpiVisitorsVal',       pv);
+        setEl('kpiPageViewsVal',      pv);
+        setEl('kpiSubscribersVal',    sb);
+        setEl('kpiUniqueVisitorsVal', uv);
+        console.log('PeopleOS: analytics =', { total_page_views: pv, unique_visitors_today: uv, total_subscribers: sb });
       } else {
-        if (vEl && vEl.textContent === '—') vEl.textContent = 'Unavailable';
-        if (sEl && sEl.textContent === '—') sEl.textContent = 'Unavailable';
+        ['kpiVisitorsVal', 'kpiSubscribersVal', 'kpiPageViewsVal', 'kpiUniqueVisitorsVal'].forEach(id => {
+          const el = document.getElementById(id);
+          if (el && el.textContent === '—') el.textContent = '—';
+        });
       }
     } catch (_) {
-      const vEl = document.getElementById('kpiVisitorsVal');
-      const sEl = document.getElementById('kpiSubscribersVal');
-      if (vEl && vEl.textContent === '—') vEl.textContent = 'Unavailable';
-      if (sEl && sEl.textContent === '—') sEl.textContent = 'Unavailable';
+      // Analytics failure must never break dashboard
     }
   }
 

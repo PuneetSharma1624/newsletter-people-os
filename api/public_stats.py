@@ -1,8 +1,9 @@
-"""GET /api/public/stats — aggregate visit + subscriber counts only.
+"""GET /api/public/stats — aggregate page views + subscriber counts only.
 Never returns emails or personal data.
+No-cache: always returns fresh counts.
 """
 from http.server import BaseHTTPRequestHandler
-import json, os, urllib.request
+import json, os, urllib.request, datetime
 
 
 def _sb_headers(key):
@@ -19,6 +20,11 @@ def _sb_count(sb_url, sb_key, table, qs=''):
         return int(cr.split('/')[-1]) if '/' in cr else 0
 
 
+def _today_range():
+    today = datetime.date.today().isoformat()
+    return f"{today}T00:00:00Z", f"{today}T23:59:59Z"
+
+
 class handler(BaseHTTPRequestHandler):
 
     def do_OPTIONS(self):
@@ -31,29 +37,51 @@ class handler(BaseHTTPRequestHandler):
         sb_key = os.environ.get('SUPABASE_SERVICE_ROLE_KEY', '')
 
         if not sb_url or not sb_key:
-            self._json({'ok': True, 'total_visits': 0, 'total_subscribers': 0,
+            self._json({'ok': True, 'total_page_views': 0, 'total_visits': 0,
+                        'unique_visitors_today': 0, 'total_subscribers': 0,
                         'note': 'analytics_unavailable'})
             return
 
         try:
-            total_visits      = _sb_count(sb_url, sb_key, 'site_analytics', 'event_type=eq.visit')
-            total_subscribers = _sb_count(sb_url, sb_key, 'subscribers',    'status=eq.active')
-            self._json({'ok': True, 'total_visits': total_visits, 'total_subscribers': total_subscribers})
+            total_page_views  = _sb_count(sb_url, sb_key, 'site_analytics')
+            start, end = _today_range()
+            unique_visitors_today = _sb_count(
+                sb_url, sb_key, 'site_analytics',
+                f'visitor_hash=neq.null&created_at=gte.{start}&created_at=lte.{end}'
+            )
+            total_subscribers = _sb_count(sb_url, sb_key, 'subscribers', 'status=eq.active')
+            self._json({
+                'ok': True,
+                'total_page_views': total_page_views,
+                'total_visits': total_page_views,
+                'unique_visitors_today': unique_visitors_today,
+                'total_subscribers': total_subscribers,
+            })
         except Exception as exc:
-            self._json({'ok': False, 'error': str(exc)}, 500)
+            self._json({'ok': False, 'error': 'Analytics service error.'}, 500)
 
     def _cors(self):
         self.send_header('Access-Control-Allow-Origin', '*')
         self.send_header('Access-Control-Allow-Headers', 'Content-Type')
         self.send_header('Access-Control-Allow-Methods', 'GET, OPTIONS')
 
+    def _nocache(self):
+        self.send_header('Cache-Control', 'no-store, no-cache, max-age=0, must-revalidate')
+        self.send_header('Pragma', 'no-cache')
+        self.send_header('Expires', '0')
+
     def _json(self, body, status=200):
         payload = json.dumps(body).encode()
         self.send_response(status)
         self._cors()
+        self._nocache()
         self.send_header('Content-Type', 'application/json')
         self.end_headers()
         self.wfile.write(payload)
 
     def log_message(self, *args):
         pass
+
+
+app = handler
+application = handler

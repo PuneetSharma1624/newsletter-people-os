@@ -7,7 +7,7 @@
   <title>PeopleOS Brief — Daily Executive Intelligence Dashboard</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@500;600;700;800;900&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/style.css" />
   <link rel="stylesheet" href="/brief.css" />
 </head>
@@ -24,20 +24,16 @@
     </div>
   </nav>
 
-  <!-- HERO -->
-  <section class="hero-night" aria-label="PeopleOS Brief hero">
-    <div class="hero-bg">
-      <div class="hero-bg__base"></div>
-      <div class="hero-bg__nebula"></div>
-      <img class="hero-bg__stars" src="/assets/stars-layer.svg" alt="" aria-hidden="true" loading="eager"/>
-      <div class="hero-bg__moon" aria-hidden="true">
-        <svg viewBox="0 0 80 80" width="72" height="72">
-          <circle cx="42" cy="38" r="28" fill="#1e3a5f"/>
-          <circle cx="52" cy="30" r="23" fill="#071225"/>
-          <circle cx="42" cy="38" r="33" fill="none" stroke="#bfdbfe" stroke-width="0.6" opacity="0.22"/>
-        </svg>
-      </div>
-      <img class="hero-bg__hills" src="/assets/hills-layer.svg" alt="" aria-hidden="true" loading="eager"/>
+  <!-- HERO — CSS cosmic background; no external illustration assets required -->
+  <!-- Replace .hero-visual-placeholder later with a custom Figma/Rive/Lottie/WebM asset. Do not hand-code complex human illustration here. -->
+  <section class="cosmic-hero" aria-label="PeopleOS Brief hero">
+    <div class="cosmic-bg" aria-hidden="true">
+      <div class="cosmic-bg__base"></div>
+      <div class="cosmic-glow cosmic-glow--left"></div>
+      <div class="cosmic-glow cosmic-glow--right"></div>
+      <div class="cosmic-glow cosmic-glow--warm"></div>
+      <div class="cosmic-stars"></div>
+      <div class="cosmic-grain"></div>
     </div>
 
     <div class="hero-content">
@@ -46,8 +42,8 @@
           <span class="eyebrow-dot"></span>
           Daily Executive Intelligence
         </div>
-        <h1 class="hero-headline">See tomorrow's signals<br class="hero-br"/> before the noise.</h1>
-        <p class="hero-sub">PeopleOS Brief turns daily market, AI, HR, research, and economic updates into one executive intelligence dashboard. 12 sections. 72 signals. Every morning at 7&nbsp;AM&nbsp;IST.</p>
+        <h1 class="hero-headline">See tomorrow's signals<br/> before the noise.</h1>
+        <p class="hero-sub">PeopleOS Brief turns markets, AI, HR, research, and economic updates into one executive intelligence dashboard. 12 sections. 72 signals. Every morning at 7&nbsp;AM&nbsp;IST.</p>
         <div class="hero-ctas">
           <a href="#dashboardMain" class="btn-hero-primary">Read Today's Brief</a>
           <a href="#subscribe-section" class="btn-hero-secondary">Subscribe Free</a>
@@ -59,11 +55,6 @@
           <span class="signal-tag signal-tag--econ">Economics</span>
           <span class="signal-tag signal-tag--major">Major Updates</span>
         </div>
-      </div>
-
-      <div class="hero-illustration" aria-hidden="true">
-        <img class="hero-constellation" src="/assets/constellation-map.svg" alt=""/>
-        <img class="hero-scout" src="/assets/hero-night-scout.svg" alt="Signal watcher with telescope under night sky"/>
       </div>
     </div>
   </section>
@@ -132,7 +123,7 @@
           <input type="email" id="emailInput" class="email-input" placeholder="your@email.com" autocomplete="email" required />
           <button type="submit" class="btn-subscribe" id="submitBtn">
             <span id="btnText">Subscribe free</span>
-            <span id="btnLoader" class="loader" hidden></span>
+            <span id="btnLoader" class="loader" style="display:none"></span>
           </button>
         </div>
         <div id="formMessage" class="form-message" aria-live="polite" style="text-align:center;"></div>

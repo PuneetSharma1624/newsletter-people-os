@@ -25,7 +25,13 @@
       "Bash(echo \"exit: $?\")",
       "Bash(python -m pytest tests/ -q)",
       "Bash(python3 -)",
-      "mcp__Claude_Preview__preview_start"
+      "mcp__Claude_Preview__preview_start",
+      "Bash(python -m compileall . -q)",
+      "Bash(grep -n \"^\\\\./\\\\|^/\\\\|SUBSCRIBE\\\\|FOOTER\\\\|GLASS\\\\|RESPONSIVE\\\\|hero-night\\\\|hero-bg\\\\|hero-content\\\\|hero-illustration\" landing/style.css)",
+      "Bash(sed -n '370,373p' landing/style.css)",
+      "Bash(sed -n '484,488p' landing/style.css)",
+      "Bash(python -m compileall api/ newsletter/ scripts/ -q)",
+      "Bash(python newsletter/main.py --audit-links)"
     ]
   }
 }

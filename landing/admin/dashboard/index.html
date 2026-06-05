@@ -309,20 +309,34 @@
       <code style="background:rgba(99,102,241,0.12);padding:1px 5px;border-radius:3px;">GITHUB_PAT_FOR_WORKFLOW_DISPATCH</code> to your Vercel env vars.
     </div>
 
-    <p class="section-label">Actions</p>
-    <div class="btn-grid">
-      <button class="action-btn" onclick="trigger('check_today')"><span class="btn-icon">🔎</span>Check Today's Brief</button>
-      <button class="action-btn" onclick="trigger('ensure_today')"><span class="btn-icon">⚡</span>Retry Today's Generation</button>
+    <p class="section-label">Diagnostics</p>
+    <div class="btn-grid" style="margin-bottom:12px;">
+      <button class="action-btn" onclick="checkTodayIssue()"><span class="btn-icon">🔎</span>Check Today's Issue</button>
+      <button class="action-btn" onclick="checkProductionJson()"><span class="btn-icon">🌐</span>Check Production JSON</button>
+      <button class="action-btn" onclick="refreshPublicStats()"><span class="btn-icon">📊</span>Refresh Public Stats</button>
+      <button class="action-btn" onclick="testSubscribeAdminEmail()"><span class="btn-icon">🧪</span>Test Subscribe heyypuneet@gmail.com</button>
+    </div>
+
+    <p class="section-label">Generation</p>
+    <div class="btn-grid" style="margin-bottom:12px;">
+      <button class="action-btn" onclick="trigger('ensure_today')"><span class="btn-icon">⚡</span>Trigger Production Refresh</button>
+      <button class="action-btn" onclick="simulateDemoRefresh()"><span class="btn-icon">🎭</span>Simulate Demo Refresh</button>
       <button class="action-btn" onclick="trigger('generate_today', true)"><span class="btn-icon">🔄</span>Force Regenerate Today</button>
-      <button class="action-btn" onclick="trigger('check_production')"><span class="btn-icon">🌐</span>Check Production Availability</button>
+      <button class="action-btn" onclick="refreshIndex()"><span class="btn-icon">🗂</span>Refresh Archive Index</button>
+      <button class="action-btn" onclick="trigger('backfill_initial')"><span class="btn-icon">📦</span>Backfill 3 Days</button>
+    </div>
+
+    <p class="section-label">Email</p>
+    <div class="btn-grid" style="margin-bottom:24px;">
       <button class="action-btn danger" onclick="confirmLiveSend()"><span class="btn-icon">🚀</span>Send Today's Newsletter</button>
       <button class="action-btn" onclick="triggerTest()"><span class="btn-icon">📧</span>Send Test Email</button>
-      <button class="action-btn" onclick="trigger('backfill_initial')"><span class="btn-icon">📦</span>Backfill 3 Days</button>
-      <button class="action-btn" onclick="refreshIndex()"><span class="btn-icon">🗂</span>Refresh Archive Index</button>
     </div>
 
     <p class="section-label">Activity Log</p>
     <div class="log-box" id="logBox">Admin dashboard loaded. Ready.</div>
+
+    <p class="section-label" style="margin-top:24px;">Recent Action Logs <button onclick="loadActionLogs()" style="background:transparent;border:1px solid var(--border-subtle);color:var(--text-dim);cursor:pointer;font-family:var(--font);font-size:0.68rem;padding:3px 8px;border-radius:var(--radius);margin-left:8px;transition:all .15s;" onmouseover="this.style.color='var(--white)'" onmouseout="this.style.color='var(--text-dim)'">↻ Refresh</button></p>
+    <div class="log-box" id="actionLogsPanel" style="max-height:200px;">Loading…</div>
 
   </div><!-- /tab-overview -->
 

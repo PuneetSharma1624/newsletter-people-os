@@ -264,6 +264,185 @@
     return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   }
 
+  // ─── ACTION LOG UTILITY ─────────────────────────────────────
+  async function logAction(actionName, status, details = {}) {
+    try {
+      await fetch('/api/admin/action-log', {
+        method: 'POST',
+        headers: authHeaders(),
+        body: JSON.stringify({
+          action_name: actionName,
+          action_type: details.type || 'admin',
+          status,
+          request_payload:  details.request  || null,
+          response_payload: details.response || null,
+          error_message:    details.error    || null,
+        }),
+      });
+    } catch (e) {
+      console.warn('logAction failed:', e.message);
+    }
+  }
+
+  // ─── LOAD ACTION LOGS ───────────────────────────────────────
+  async function loadActionLogs() {
+    const panel = document.getElementById('actionLogsPanel');
+    if (!panel) return;
+    panel.innerHTML = '<div style="color:var(--text-dim);font-size:0.8rem;padding:8px 0;">Loading…</div>';
+    try {
+      const res = await fetch('/api/admin/action-logs', { headers: authHeaders() });
+      const data = await res.json();
+      if (!data.ok || !data.logs?.length) {
+        panel.innerHTML = '<div style="color:var(--text-dim);font-size:0.8rem;padding:8px 0;">No action logs yet.</div>';
+        return;
+      }
+      panel.innerHTML = data.logs.map(l => {
+        const ts = l.created_at ? new Date(l.created_at).toLocaleString() : '';
+        const cls = l.status === 'success' ? 'ok' : l.status === 'error' ? 'err' : 'info';
+        return `<div class="log-line ${cls}">[${ts}] ${esc(l.action_name)} — ${esc(l.status)}${l.error_message ? ' | ' + esc(l.error_message) : ''}</div>`;
+      }).join('');
+    } catch (e) {
+      panel.innerHTML = `<div style="color:var(--danger);font-size:0.8rem;">Failed to load logs: ${esc(e.message)}</div>`;
+    }
+  }
+
+  // ─── TEST SUBSCRIBE ─────────────────────────────────────────
+  async function testSubscribeAdminEmail() {
+    const email = 'heyypuneet@gmail.com';
+    addLog(`Test subscribe: ${email}…`, 'info');
+    await logAction('test_subscribe', 'started', { request: { email } });
+
+    // Get before count
+    let beforeCount = '?';
+    try {
+      const sr = await fetch('/api/public/stats?t=' + Date.now(), { cache: 'no-store' });
+      const sd = await sr.json();
+      beforeCount = sd.total_subscribers ?? '?';
+    } catch (_) {}
+
+    try {
+      const res = await fetch('/api/subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, source: 'admin_test' }),
+      });
+      const data = await res.json();
+      addLog(`Subscribe response: ok=${data.ok} status=${data.status||''} msg=${data.message||data.error||''}`, data.ok ? 'ok' : 'err');
+
+      // Refetch stats
+      let afterCount = '?';
+      try {
+        await new Promise(r => setTimeout(r, 600));
+        const sr2 = await fetch('/api/public/stats?t=' + Date.now(), { cache: 'no-store' });
+        const sd2 = await sr2.json();
+        afterCount = sd2.total_subscribers ?? '?';
+      } catch (_) {}
+
+      addLog(`Subscriber count: before=${beforeCount} after=${afterCount}`, 'info');
+      await logAction('test_subscribe', data.ok ? 'success' : 'error', {
+        request: { email },
+        response: { ok: data.ok, status: data.status, message: data.message },
+        error: data.ok ? null : (data.error || data.message),
+      });
+    } catch (e) {
+      addLog('Test subscribe error: ' + e.message, 'err');
+      await logAction('test_subscribe', 'error', { error: e.message });
+    }
+  }
+  window.testSubscribeAdminEmail = testSubscribeAdminEmail;
+
+  // ─── DEMO REFRESH ───────────────────────────────────────────
+  async function simulateDemoRefresh() {
+    addLog('Simulate demo refresh…', 'info');
+    await logAction('demo_refresh', 'started');
+    try {
+      const res = await fetch('/api/admin/demo-refresh', {
+        method: 'POST', headers: authHeaders(),
+      });
+      const data = await res.json();
+      if (data.ok) {
+        addLog(`✓ Demo refresh: ${data.message}`, 'ok');
+        await logAction('demo_refresh', 'success', { response: data });
+      } else {
+        addLog(`Demo refresh: ${data.error}`, data.mode === 'production' ? 'warn' : 'err');
+        if (data.mode === 'production') addLog('Use Trigger Production Refresh to dispatch GitHub Actions.', 'info');
+        await logAction('demo_refresh', 'error', { error: data.error });
+      }
+    } catch (e) {
+      addLog('Demo refresh error: ' + e.message, 'err');
+      await logAction('demo_refresh', 'error', { error: e.message });
+    }
+  }
+  window.simulateDemoRefresh = simulateDemoRefresh;
+
+  // ─── CHECK TODAY'S ISSUE ─────────────────────────────────────
+  async function checkTodayIssue() {
+    addLog('Checking today\'s issue…', 'info');
+    await logAction('check_today_issue', 'started');
+    try {
+      const res = await fetch('/api/admin/status', { headers: authHeaders() });
+      const data = await res.json();
+      if (data.ok) {
+        const today = data.today || '';
+        const exists = data.today_exists;
+        addLog(`Today (IST): ${today} | exists: ${exists ? '✓' : '✗'}`, exists ? 'ok' : 'warn');
+        const gs = data.generation_status || {};
+        addLog(`Gen status: ${gs.generation_status || gs.status || '?'} | sections: ${gs.sections_complete || '?'}`, 'info');
+        await logAction('check_today_issue', 'success', { response: { today, exists } });
+      } else {
+        addLog('Status check failed: ' + (data.message || 'unknown'), 'err');
+        await logAction('check_today_issue', 'error', { error: data.message });
+      }
+    } catch (e) {
+      addLog('Check error: ' + e.message, 'err');
+      await logAction('check_today_issue', 'error', { error: e.message });
+    }
+  }
+  window.checkTodayIssue = checkTodayIssue;
+
+  // ─── CHECK PRODUCTION JSON ───────────────────────────────────
+  async function checkProductionJson() {
+    addLog('Checking production JSON…', 'info');
+    await logAction('check_production_json', 'started');
+    try {
+      const res = await fetch('/api/admin/status', { headers: authHeaders() });
+      const data = await res.json();
+      const today = data.today || new Date().toISOString().split('T')[0];
+      const baseUrl = window.location.origin;
+      const url = `${baseUrl}/data/issues/${today}.json`;
+      addLog(`Fetching: ${url}`, 'info');
+      const r2 = await fetch(url + '?t=' + Date.now(), { cache: 'no-store' });
+      if (r2.ok) {
+        const issue = await r2.json();
+        addLog(`✓ Production JSON live: sections=${issue.total_sections} items=${issue.total_dashboard_items}`, 'ok');
+        await logAction('check_production_json', 'success', { response: { url, sections: issue.total_sections } });
+      } else {
+        addLog(`✗ Production JSON not available (HTTP ${r2.status}): ${url}`, 'err');
+        await logAction('check_production_json', 'error', { error: `HTTP ${r2.status}` });
+      }
+    } catch (e) {
+      addLog('Production JSON check error: ' + e.message, 'err');
+      await logAction('check_production_json', 'error', { error: e.message });
+    }
+  }
+  window.checkProductionJson = checkProductionJson;
+
+  // ─── REFRESH PUBLIC STATS ────────────────────────────────────
+  async function refreshPublicStats() {
+    addLog('Refreshing public stats…', 'info');
+    await logAction('refresh_public_stats', 'started');
+    try {
+      const res = await fetch('/api/public/stats?t=' + Date.now(), { cache: 'no-store' });
+      const data = await res.json();
+      addLog(`Stats: page_views=${data.total_page_views ?? data.total_visits ?? '?'} subscribers=${data.total_subscribers ?? '?'} unique_today=${data.unique_visitors_today ?? '?'}`, 'ok');
+      await logAction('refresh_public_stats', 'success', { response: data });
+    } catch (e) {
+      addLog('Stats error: ' + e.message, 'err');
+      await logAction('refresh_public_stats', 'error', { error: e.message });
+    }
+  }
+  window.refreshPublicStats = refreshPublicStats;
+
   // ─── TRIGGER ────────────────────────────────────────────────
   async function trigger(mode, force) {
     addLog(`Triggering: mode=${mode}${force ? ' (force)' : ''}…`, 'info');
@@ -436,5 +615,7 @@
     loadAdminStats();
     loadNotifications();
     loadStatus();
+    loadActionLogs();
   });
+  window.loadActionLogs = loadActionLogs;
 })();

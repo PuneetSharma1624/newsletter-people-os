@@ -167,3 +167,22 @@ UPDATE public.send_log sl
 SET issue_date = ni.issue_date
 FROM public.newsletter_issues ni
 WHERE sl.issue_id = ni.id AND sl.issue_date IS NULL;
+
+-- ============================================================
+-- MIGRATION v5: Action logs (idempotent)
+-- Run in Supabase SQL Editor to enable admin action logging.
+-- ============================================================
+CREATE TABLE IF NOT EXISTS public.action_logs (
+    id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    action_name      TEXT NOT NULL,
+    action_type      TEXT,
+    status           TEXT NOT NULL,
+    request_payload  JSONB,
+    response_payload JSONB,
+    error_message    TEXT,
+    created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_action_logs_action_name ON public.action_logs (action_name);
+CREATE INDEX IF NOT EXISTS idx_action_logs_created_at  ON public.action_logs (created_at);
+CREATE INDEX IF NOT EXISTS idx_action_logs_status      ON public.action_logs (status);
