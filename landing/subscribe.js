@@ -1,85 +1,75 @@
-/* PeopleOS Brief — subscribe form handler + reader count */
+/* PeopleOS Brief - subscribe form handler + live reader count */
 (function () {
   'use strict';
 
-  const form       = document.getElementById('subscribeForm');
-  const emailInput = document.getElementById('emailInput');
-  const submitBtn  = document.getElementById('submitBtn');
-  const btnText    = document.getElementById('btnText');
-  const btnLoader  = document.getElementById('btnLoader');
-  const formMessage= document.getElementById('formMessage');
+  const form        = document.getElementById('subscribeForm');
+  const emailInput  = document.getElementById('emailInput');
+  const submitBtn   = document.getElementById('submitBtn');
+  const btnText     = document.getElementById('btnText');
+  const btnLoader   = document.getElementById('btnLoader');
+  const formMessage = document.getElementById('formMessage');
 
   if (!form) return;
-
-  // ─── READER COUNT ────────────────────────────────────────────
-  async function loadReaderCount() {
-    try {
-      const res = await fetch('/api/stats?t=' + Date.now(), { cache: 'no-store' });
-      if (!res.ok) return;
-      const data = await res.json();
-      if (data.ok) {
-        const n = data.total_subscribers || 0;
-        if (n > 0) setReaderCount(n);
-        const sEl = document.getElementById('kpiSubscribersVal');
-        if (sEl) sEl.textContent = n.toLocaleString();
-      }
-    } catch (_) {}
-  }
 
   function setReaderCount(n) {
     const el = document.getElementById('readerCountLine');
     if (el) el.textContent = `Join ${n.toLocaleString()} readers getting the executive cut every morning.`;
   }
 
-  loadReaderCount();
+  function updateLiveCounters(data) {
+    const pv = data.total_page_views ?? data.total_visits ?? 0;
+    const uv = data.unique_visitors_today ?? 0;
+    const sb = data.total_subscribers ?? 0;
+    const setEl = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+    setEl('kpiVisitorsVal', pv.toLocaleString());
+    setEl('kpiPageViewsVal', `${pv.toLocaleString()} total · ${uv.toLocaleString()} today`);
+    setEl('kpiSubscribersVal', sb.toLocaleString());
+    setEl('kpiUniqueVisitorsVal', `${sb.toLocaleString()} morning brief readers`);
+    setReaderCount(sb);
+  }
 
-  // ─── FORM STATE ──────────────────────────────────────────────
-  let _submitting = false;
+  async function loadReaderCount() {
+    try {
+      const res = await fetch('/api/stats?t=' + Date.now(), { cache: 'no-store' });
+      const data = res.ok ? await res.json().catch(() => null) : null;
+      if (data && data.ok) updateLiveCounters(data);
+    } catch (err) {
+      console.warn('PeopleOS stats refresh failed:', err);
+    }
+  }
+
+  let submitting = false;
 
   function setLoading(on) {
-    _submitting = on;
-    submitBtn.disabled  = on;
+    submitting = on;
+    submitBtn.disabled = on;
     emailInput.disabled = on;
-    if (btnText) {
-      btnText.style.display = on ? 'none' : '';
-    }
+    if (btnText) btnText.style.display = on ? 'none' : '';
     if (btnLoader) {
-      // Remove hidden attr if present — use only style.display for control
-      if (on) {
-        btnLoader.removeAttribute('hidden');
-        btnLoader.style.display = 'inline-block';
-      } else {
-        btnLoader.style.display = 'none';
-      }
+      btnLoader.removeAttribute('hidden');
+      btnLoader.style.display = on ? 'inline-block' : 'none';
     }
   }
 
   function showMessage(text, type) {
     if (!formMessage) return;
     formMessage.textContent = text;
-    formMessage.className   = 'form-message ' + type;
+    formMessage.className = 'form-message ' + type;
   }
 
   function clearMessage() {
     if (!formMessage) return;
     formMessage.textContent = '';
-    formMessage.className   = 'form-message';
+    formMessage.className = 'form-message';
   }
 
-  // ─── SUBMIT ──────────────────────────────────────────────────
   form.addEventListener('submit', async function (e) {
     e.preventDefault();
-    if (_submitting) return; // prevent double submit
+    if (submitting) return;
 
     clearMessage();
 
     const email = (emailInput.value || '').trim();
-    if (!email) {
-      showMessage('Please enter your email address.', 'error');
-      emailInput.focus();
-      return;
-    }
-    // Basic email validation
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) {
       showMessage('Please enter a valid email address.', 'error');
       emailInput.focus();
@@ -87,10 +77,8 @@
     }
 
     setLoading(true);
-
-    let succeeded = false;
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s timeout
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
 
     try {
       const res = await fetch('/api/subscribe', {
@@ -99,21 +87,15 @@
         body: JSON.stringify({ email, source: 'dashboard' }),
         signal: controller.signal,
       });
-
       clearTimeout(timeoutId);
 
-      let data;
-      try { data = await res.json(); }
-      catch (_) { data = null; }
-
+      const data = await res.json().catch(() => null);
       if (data && data.ok) {
-        showMessage(data.message || "You're subscribed!", 'success');
+        const status = data.status === 'already_subscribed' ? 'You are already subscribed.' : "You're subscribed!";
+        showMessage(data.message || status, 'success');
         emailInput.value = '';
-        succeeded = true;
-        if (btnText) { btnText.style.display = ''; btnText.textContent = 'Subscribed ✓'; }
-        if (btnLoader) btnLoader.style.display = 'none';
-        submitBtn.disabled = true;
-        setTimeout(loadReaderCount, 800);
+        if (btnText) btnText.textContent = 'Subscribed';
+        await loadReaderCount();
       } else if (data && (data.error || data.message)) {
         showMessage(data.error || data.message, 'error');
       } else if (!res.ok) {
@@ -129,7 +111,9 @@
         showMessage('Cannot reach server. Please check your connection.', 'error');
       }
     } finally {
-      if (!succeeded) setLoading(false);
+      setLoading(false);
     }
   });
+
+  loadReaderCount();
 })();

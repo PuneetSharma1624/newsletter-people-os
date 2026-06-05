@@ -1,21 +1,21 @@
 {
   "latest_issue_date": "2026-06-05",
-  "latest_complete_issue_date": "2026-06-01",
-  "generation_status": "in_progress",
+  "latest_complete_issue_date": "2026-06-05",
+  "generation_status": "demo_fallback",
   "generation_started_at_utc": "2026-06-05T15:49:23.126738Z",
   "generation_completed_at_utc": "2026-06-01T16:51:55.338447Z",
   "generation_started_at_ist": "2026-06-05T21:19:23.126738+05:30",
   "generation_completed_at_ist": "2026-06-01T22:21:55.338447+05:30",
   "last_generation_run_id": null,
   "last_generation_attempt": "scheduled_0700",
-  "last_generation_error": null,
+  "last_generation_error": "Demo fallback issues for 2026-06-02 through 2026-06-05. Real generation requires GROQ/TAVILY keys or GitHub Actions.",
   "sections_complete": 12,
   "last_email_sent_date": null,
   "last_email_sent_at_utc": null,
   "last_email_status": "not_sent",
   "current_date": "2026-06-05",
-  "status": "running",
+  "status": "demo_fallback",
   "last_started_at": "2026-06-05T15:49:23.126738Z",
   "last_completed_at": "2026-06-01T16:51:55.338447Z",
-  "last_error": null
+  "last_error": "Demo fallback issues for 2026-06-02 through 2026-06-05. Real generation requires GROQ/TAVILY keys or GitHub Actions."
 }

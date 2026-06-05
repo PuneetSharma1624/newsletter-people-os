@@ -74,8 +74,22 @@
   async function loadForDate(date) {
     showLoading();
     const issue = await fetchIssue(date);
-    if (!issue) { showEmpty(); currentDate=date; setURLParams({date,section:activeSection==='all'?null:activeSection}); return; }
-    console.log('PeopleOS: loaded issue =', date, '| sections:', (issue.sections||[]).length, '| items:', issue.total_dashboard_items||0);
+    if (!issue) {
+      const latest = availableDates[0];
+      if (latest && latest !== date) {
+        console.log('PeopleOS loaded issue:', latest);
+        showDateWarning(date, latest);
+        setURLParams({date:null, section:activeSection==='all'?null:activeSection});
+        await loadForDate(latest);
+      } else {
+        console.log('PeopleOS loaded issue:', null);
+        showEmpty();
+        currentDate = date;
+        setURLParams({date,section:activeSection==='all'?null:activeSection});
+      }
+      return;
+    }
+    console.log('PeopleOS loaded issue:', date);
     document.title = `PeopleOS Brief — ${date}`;
     currentIssue = issue;
     renderIssue(issue);
@@ -91,7 +105,7 @@
     if (!dates||dates.length===0) { showEmpty(); return; }
     const today = todayISO();
     const target = dates.includes(today) ? today : dates[0];
-    console.log('PeopleOS: latest available date =', target);
+    console.log('PeopleOS latest available date:', target);
     await loadForDate(target);
   }
 
@@ -104,9 +118,15 @@
     const el = document.createElement('div');
     el.id = 'dateWarning';
     el.style.cssText = 'background:rgba(249,115,22,0.12);border:1px solid rgba(249,115,22,0.3);color:#fdba74;font-size:0.8rem;padding:8px 16px;text-align:center;display:flex;align-items:center;justify-content:center;gap:12px;';
-    el.innerHTML = `⚠ Requested issue <strong>${requestedDate}</strong> is archived or unavailable. Showing latest available brief instead.` +
-      ` <button onclick="document.getElementById('dateWarning').remove()" style="background:none;border:none;color:#fdba74;cursor:pointer;font-size:0.9rem;">✕</button>`;
+    el.innerHTML = `Requested issue <strong>${requestedDate}</strong> is unavailable. Showing latest available brief (${latestDate}).` +
+      ` <button id="viewLatestBriefBtn" style="background:none;border:1px solid rgba(249,115,22,0.35);border-radius:6px;color:#fdba74;cursor:pointer;font-size:0.78rem;padding:4px 8px;">View latest brief</button>` +
+      ` <button id="dismissDateWarningBtn" style="background:none;border:none;color:#fdba74;cursor:pointer;font-size:0.9rem;">x</button>`;
     bar.insertAdjacentElement('beforebegin', el);
+    document.getElementById('viewLatestBriefBtn')?.addEventListener('click', () => {
+      setURLParams({date:null, section:activeSection==='all'?null:activeSection});
+      loadLatest();
+    });
+    document.getElementById('dismissDateWarningBtn')?.addEventListener('click', () => el.remove());
   }
 
   // ─── STATES ─────────────────────────────────────────────
@@ -319,7 +339,15 @@
       btn.className = 'date-chip'+(isToday?' date-chip--today':'')+(date===currentDate?' date-chip--active':'');
       btn.textContent = isToday?'Today':isYesterday?'Yesterday':shortDate(date);
       btn.dataset.date = date;
-      btn.addEventListener('click', () => loadForDate(date));
+      btn.addEventListener('click', () => {
+        if (!availableDates.includes(date)) {
+          showDateWarning(date, availableDates[0]);
+          setURLParams({date:null, section:activeSection==='all'?null:activeSection});
+          loadLatest();
+        } else {
+          loadForDate(date);
+        }
+      });
       container.appendChild(btn);
     });
   }
@@ -413,13 +441,15 @@
     if (urlSection && urlSection!=='all') activeSection = urlSection;
 
     const urlDate = getURLParam('date');
-    console.log('PeopleOS: requested date =', urlDate || '(none)');
+    console.log('PeopleOS requested date:', urlDate || '(none)');
+    console.log('PeopleOS available dates:', availableDates);
+    console.log('PeopleOS latest available date:', availableDates[0] || null);
 
     if (urlDate) {
       // Validate date exists; if not, fallback to latest with warning
       if (availableDates.length > 0 && !availableDates.includes(urlDate)) {
         const latest = availableDates[0];
-        console.log('PeopleOS: requested date not available, falling back to', latest);
+        console.log('PeopleOS loaded issue:', latest);
         showDateWarning(urlDate, latest);
         setURLParams({date: null, section: urlSection && urlSection!=='all' ? urlSection : null});
         await loadLatest();
@@ -446,30 +476,50 @@
 
   async function recordVisit() {
     try {
-      const res = await fetch('/api/visit', { method: 'POST', cache: 'no-store' });
+      const res = await fetch('/api/visit', {
+        method: 'POST',
+        cache: 'no-store',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ path: window.location.pathname + window.location.search, referrer: document.referrer || '' })
+      });
       const data = res.ok ? await res.json().catch(() => null) : null;
-      const ids = ['kpiVisitorsVal', 'kpiSubscribersVal', 'kpiPageViewsVal', 'kpiUniqueVisitorsVal'];
-      ids.forEach(id => { if (!document.getElementById(id)) console.warn('PeopleOS: missing element #' + id); });
-
-      if (data && data.ok) {
-        const pv = data.total_page_views ?? data.total_visits ?? 0;
-        const uv = data.unique_visitors_today ?? 0;
-        const sb = data.total_subscribers ?? 0;
-        const setEl = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
-        setEl('kpiVisitorsVal',    pv.toLocaleString());
-        setEl('kpiPageViewsVal',   pv.toLocaleString() + ' total · ' + uv.toLocaleString() + ' today');
-        setEl('kpiSubscribersVal', sb.toLocaleString());
-        setEl('kpiUniqueVisitorsVal', sb.toLocaleString() + ' morning brief readers');
-        console.log('PeopleOS: analytics =', { total_page_views: pv, unique_visitors_today: uv, total_subscribers: sb });
-      } else {
-        ['kpiVisitorsVal', 'kpiSubscribersVal', 'kpiPageViewsVal', 'kpiUniqueVisitorsVal'].forEach(id => {
-          const el = document.getElementById(id);
-          if (el && el.textContent === '—') el.textContent = '—';
-        });
-      }
-    } catch (_) {
-      // Analytics failure must never break dashboard
+      if (data && data.ok) updateStatsUI(data);
+      await loadStats();
+    } catch (err) {
+      console.warn('PeopleOS visit failed:', err);
+      await loadStats();
     }
+  }
+
+  async function loadStats() {
+    try {
+      const res = await fetch('/api/stats?t=' + Date.now(), { cache: 'no-store' });
+      const data = res.ok ? await res.json().catch(() => null) : null;
+      if (data && data.ok) {
+        updateStatsUI(data);
+      } else {
+        throw new Error((data && data.error) || 'Stats request failed');
+      }
+    } catch (err) {
+      console.warn('PeopleOS stats failed:', err);
+      ['kpiVisitorsVal', 'kpiSubscribersVal', 'kpiPageViewsVal', 'kpiUniqueVisitorsVal'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = '—';
+      });
+    }
+  }
+
+  function updateStatsUI(data) {
+    const pv = data.total_page_views ?? data.total_visits ?? 0;
+    const uv = data.unique_visitors_today ?? 0;
+    const sb = data.total_subscribers ?? 0;
+    const setEl = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+    setEl('kpiVisitorsVal', pv.toLocaleString());
+    setEl('kpiPageViewsVal', pv.toLocaleString() + ' total · ' + uv.toLocaleString() + ' today');
+    setEl('kpiSubscribersVal', sb.toLocaleString());
+    setEl('kpiUniqueVisitorsVal', sb.toLocaleString() + ' morning brief readers');
+    setEl('readerCountLine', `Join ${sb.toLocaleString()} readers getting the executive cut every morning.`);
+    console.log('PeopleOS analytics:', { total_page_views: pv, unique_visitors_today: uv, total_subscribers: sb });
   }
 
   document.addEventListener('DOMContentLoaded', init);

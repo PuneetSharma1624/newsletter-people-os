@@ -14,7 +14,10 @@ Actions:
   POST check_json      — check production JSON availability
 """
 from http.server import BaseHTTPRequestHandler
-import json, os, urllib.request, urllib.error, hashlib, datetime, pathlib
+import json, os, urllib.request, urllib.error, hashlib, datetime, pathlib, sys
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+from newsletter.backend_utils import normalize_supabase_url
 
 
 # ── helpers ──────────────────────────────────────────────────────────────────
@@ -147,7 +150,7 @@ def _action_status():
 
 
 def _action_admin_stats():
-    sb_url = os.environ.get('SUPABASE_URL', '').rstrip('/')
+    sb_url = normalize_supabase_url(os.environ.get('SUPABASE_URL', ''))
     sb_key = os.environ.get('SUPABASE_SERVICE_ROLE_KEY', '')
     if not sb_url or not sb_key:
         return {'ok': False, 'message': 'Supabase not configured'}
@@ -170,7 +173,7 @@ def _action_admin_stats():
 
 
 def _action_subscribers(limit=100):
-    sb_url = os.environ.get('SUPABASE_URL', '').rstrip('/')
+    sb_url = normalize_supabase_url(os.environ.get('SUPABASE_URL', ''))
     sb_key = os.environ.get('SUPABASE_SERVICE_ROLE_KEY', '')
     if not sb_url or not sb_key:
         return {'ok': False, 'message': 'Supabase not configured'}
@@ -183,7 +186,7 @@ def _action_subscribers(limit=100):
 
 
 def _action_logs(limit=50):
-    sb_url = os.environ.get('SUPABASE_URL', '').rstrip('/')
+    sb_url = normalize_supabase_url(os.environ.get('SUPABASE_URL', ''))
     sb_key = os.environ.get('SUPABASE_SERVICE_ROLE_KEY', '')
     if not sb_url or not sb_key:
         return {'ok': True, 'logs': [], 'note': 'unavailable'}
@@ -203,7 +206,7 @@ def _action_log_write(body):
     req_payload  = _scrub(body.get('request_payload') or body.get('details', {}).get('request') or {})
     resp_payload = _scrub(body.get('response_payload') or body.get('details', {}).get('response') or {})
 
-    sb_url = os.environ.get('SUPABASE_URL', '').rstrip('/')
+    sb_url = normalize_supabase_url(os.environ.get('SUPABASE_URL', ''))
     sb_key = os.environ.get('SUPABASE_SERVICE_ROLE_KEY', '')
     if not sb_url or not sb_key:
         return {'ok': True, 'note': 'log_unavailable'}

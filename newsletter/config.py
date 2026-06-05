@@ -1,5 +1,6 @@
 import os
 from dotenv import load_dotenv
+from newsletter.backend_utils import normalize_supabase_url
 
 load_dotenv()
 
@@ -78,7 +79,7 @@ def resend_key() -> str:
     return os.environ["RESEND_API_KEY"]
 
 def supabase_url() -> str:
-    return os.environ["SUPABASE_URL"]
+    return normalize_supabase_url(os.environ["SUPABASE_URL"])
 
 def supabase_service_key() -> str:
     return os.environ["SUPABASE_SERVICE_ROLE_KEY"]

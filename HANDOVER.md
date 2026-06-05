@@ -1,5 +1,60 @@
 # PeopleOS Brief — Project Handover
 
+## Functional Fix - 2026-06-05 - Subscribe, Stats, Visitor Count, and Missing June Data
+
+### Issues Fixed
+- Subscribe returned Supabase PGRST125 invalid path.
+- Subscriber count was not reliably reading live DB count.
+- Visitor/page-view count was not reliably live.
+- June 2/3/4/5 issue JSON data was missing from static files and indexes.
+- Date fallback allowed users to remain stuck on unavailable dates.
+
+### Root Causes
+- Supabase URL/path handling was not normalized. If `SUPABASE_URL` included `/rest/v1`, backend calls produced malformed REST paths.
+- Stats and visit APIs were not consistently reading/writing Supabase with clean errors.
+- Static issue JSON files and archive/date indexes were stale.
+- Frontend did not robustly refresh stats after subscribe/visit and did not show `0` cleanly.
+
+### Fixes Applied
+- Added normalized Supabase URL usage.
+- Fixed subscribe API with direct Supabase REST calls and safe errors.
+- Fixed stats API to read real active subscriber/page-view counts.
+- Fixed visit API to insert one page_view per POST and return updated stats.
+- Fixed frontend stats refresh after subscribe/visit.
+- Added demo fallback issue JSON for 2026-06-02, 2026-06-03, 2026-06-04, and 2026-06-05 because real generation could not run locally without Python/GROQ/TAVILY.
+- Refreshed static data indexes.
+- Verified API count remains 6.
+
+### Production Test Subscriber
+Use the real production subscribe API after deploy:
+
+```powershell
+curl.exe -i -X POST "https://YOUR_PRODUCTION_DOMAIN/api/subscribe" `
+  -H "Content-Type: application/json" `
+  -d "{\"email\":\"heyypuneet@gmail.com\",\"source\":\"admin_test\"}"
+
+curl.exe -i "https://YOUR_PRODUCTION_DOMAIN/api/stats?t=456"
+```
+
+Acceptance: `/api/subscribe` returns `ok: true`, and `/api/stats` returns `total_subscribers >= 1`.
+
+### Manual Production Requirements
+- Ensure Vercel env vars:
+  - SUPABASE_URL
+  - SUPABASE_SERVICE_ROLE_KEY
+- Run `supabase/schema.sql` in Supabase SQL Editor.
+- Trigger GitHub Action or local generation if June 2-5 real data is needed. Current June 2-5 files are demo fallback, not live generated news.
+- Verify with production curl tests.
+
+### Acceptance Criteria
+- Subscribe button works.
+- Spinner stops.
+- `heyypuneet@gmail.com` is in database after production subscribe curl succeeds.
+- Subscriber count reads 1 or actual DB count from `/api/stats`.
+- Page refresh increments `total_page_views`.
+- June 5 loads from static JSON.
+- Latest brief does not get stuck on June 1.
+
 ## Deployment Fix - 2026-06-05 - Vercel Build Entrypoint Without Admin Hijack
 
 ### Error

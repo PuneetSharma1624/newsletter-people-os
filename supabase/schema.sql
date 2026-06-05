@@ -1,6 +1,7 @@
 -- PeopleOS Brief — Supabase Schema v2
 -- Run this in Supabase SQL Editor (Dashboard → SQL Editor → New Query)
 -- If upgrading from v1, see MIGRATION section at the bottom.
+-- Run this file manually in Supabase SQL Editor after deployment if tables are missing.
 
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
@@ -15,7 +16,8 @@ CREATE TABLE IF NOT EXISTS subscribers (
     source             TEXT,
     created_at         TIMESTAMPTZ DEFAULT NOW(),
     updated_at         TIMESTAMPTZ DEFAULT NOW(),
-    unsubscribed_at    TIMESTAMPTZ
+    unsubscribed_at    TIMESTAMPTZ,
+    last_email_sent_at TIMESTAMPTZ
 );
 
 -- ============================================================
@@ -123,12 +125,17 @@ $$;
 -- ============================================================
 
 -- Add missing columns to subscribers (safe — IF NOT EXISTS)
+ALTER TABLE public.subscribers ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'active';
+ALTER TABLE public.subscribers ADD COLUMN IF NOT EXISTS source TEXT;
+ALTER TABLE public.subscribers ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW();
+ALTER TABLE public.subscribers ADD COLUMN IF NOT EXISTS unsubscribed_at TIMESTAMPTZ;
 ALTER TABLE public.subscribers ADD COLUMN IF NOT EXISTS last_email_sent_at TIMESTAMPTZ;
 
 -- TABLE: site_analytics (visit events, no raw PII)
 CREATE TABLE IF NOT EXISTS public.site_analytics (
-    id               BIGSERIAL PRIMARY KEY,
-    event_type       TEXT NOT NULL,
+    id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    event_type       TEXT NOT NULL DEFAULT 'page_view',
+    path             TEXT,
     page_path        TEXT,
     referrer         TEXT,
     user_agent_hash  TEXT,
@@ -139,6 +146,14 @@ CREATE TABLE IF NOT EXISTS public.site_analytics (
 CREATE INDEX IF NOT EXISTS idx_site_analytics_event_type  ON public.site_analytics (event_type);
 CREATE INDEX IF NOT EXISTS idx_site_analytics_created_at  ON public.site_analytics (created_at);
 CREATE INDEX IF NOT EXISTS idx_site_analytics_visitor     ON public.site_analytics (visitor_hash);
+
+ALTER TABLE public.site_analytics ADD COLUMN IF NOT EXISTS event_type TEXT DEFAULT 'page_view';
+ALTER TABLE public.site_analytics ADD COLUMN IF NOT EXISTS visitor_hash TEXT;
+ALTER TABLE public.site_analytics ADD COLUMN IF NOT EXISTS user_agent_hash TEXT;
+ALTER TABLE public.site_analytics ADD COLUMN IF NOT EXISTS path TEXT;
+ALTER TABLE public.site_analytics ADD COLUMN IF NOT EXISTS page_path TEXT;
+ALTER TABLE public.site_analytics ADD COLUMN IF NOT EXISTS referrer TEXT;
+ALTER TABLE public.site_analytics ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT NOW();
 
 -- TABLE: admin_notification_state (single-row state for bell badge)
 CREATE TABLE IF NOT EXISTS public.admin_notification_state (

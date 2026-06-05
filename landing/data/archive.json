@@ -1,6 +1,46 @@
 {
   "issues": [
     {
+      "issue_date": "2026-06-05",
+      "title": "PeopleOS Brief - 2026-06-05 (Demo Fallback)",
+      "subject": "PeopleOS Brief - June 05, 2026 Demo Fallback Intelligence",
+      "preheader": "Demo fallback issue generated because real June data was unavailable locally.",
+      "executive_summary": "Demo fallback for 2026-06-05. Real daily generation requires GROQ/TAVILY credentials or GitHub Actions workflow execution. Do not treat this issue as live generated news.",
+      "section_count": 12,
+      "item_count": 72,
+      "sent_at": null
+    },
+    {
+      "issue_date": "2026-06-04",
+      "title": "PeopleOS Brief - 2026-06-04 (Demo Fallback)",
+      "subject": "PeopleOS Brief - June 04, 2026 Demo Fallback Intelligence",
+      "preheader": "Demo fallback issue generated because real June data was unavailable locally.",
+      "executive_summary": "Demo fallback for 2026-06-04. Real daily generation requires GROQ/TAVILY credentials or GitHub Actions workflow execution. Do not treat this issue as live generated news.",
+      "section_count": 12,
+      "item_count": 72,
+      "sent_at": null
+    },
+    {
+      "issue_date": "2026-06-03",
+      "title": "PeopleOS Brief - 2026-06-03 (Demo Fallback)",
+      "subject": "PeopleOS Brief - June 03, 2026 Demo Fallback Intelligence",
+      "preheader": "Demo fallback issue generated because real June data was unavailable locally.",
+      "executive_summary": "Demo fallback for 2026-06-03. Real daily generation requires GROQ/TAVILY credentials or GitHub Actions workflow execution. Do not treat this issue as live generated news.",
+      "section_count": 12,
+      "item_count": 72,
+      "sent_at": null
+    },
+    {
+      "issue_date": "2026-06-02",
+      "title": "PeopleOS Brief - 2026-06-02 (Demo Fallback)",
+      "subject": "PeopleOS Brief - June 02, 2026 Demo Fallback Intelligence",
+      "preheader": "Demo fallback issue generated because real June data was unavailable locally.",
+      "executive_summary": "Demo fallback for 2026-06-02. Real daily generation requires GROQ/TAVILY credentials or GitHub Actions workflow execution. Do not treat this issue as live generated news.",
+      "section_count": 12,
+      "item_count": 72,
+      "sent_at": null
+    },
+    {
       "issue_date": "2026-06-01",
       "title": "PeopleOS Brief — 2026-06-01",
       "subject": "PeopleOS Brief — June 01, 2026 Intelligence",
