@@ -15,3 +15,4 @@ Thumbs.db
 *.log
 .vercel/
 node_modules/
+.agents/

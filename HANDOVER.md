@@ -1,5 +1,34 @@
 # PeopleOS Brief — Project Handover
 
+## Deployment Fix - 2026-06-05 - Public Root Returning Unauthorized
+
+### Error
+Production deployment was Ready, but `/` returned:
+
+`{"ok": false, "error": "Unauthorized"}`
+
+### Root Cause
+Public root traffic was being handled by the protected admin API because `pyproject.toml` configured a project-wide Vercel Python entrypoint: `api.admin:handler`.
+
+### Fix
+Removed the project-wide admin entrypoint from `pyproject.toml` while preserving the valid `[project]` metadata needed by Vercel/uv. Kept file-based API routing in `vercel.json`, where `/` serves `landing/index.html` and only `/api/admin` hits the protected admin handler.
+
+### API Function Count
+Remains 6:
+- api/subscribe.py
+- api/unsubscribe.py
+- api/stats.py
+- api/visit.py
+- api/admin.py
+- api/health.py
+
+### Validation
+- `/` route maps to `landing/index.html` in `vercel.json`
+- `/api/admin` route maps to `api/admin.py` and remains protected
+- `/api/health` route maps to `api/health.py`
+- API count remains 6
+- Local `python`/`py` unavailable, so `compileall` could not run in this workspace.
+
 ## Deployment Fix - 2026-06-05 - Vercel `pyproject.toml` / `uv lock`
 
 ### Error
