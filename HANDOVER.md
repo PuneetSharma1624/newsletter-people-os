@@ -1,5 +1,41 @@
 # PeopleOS Brief — Project Handover
 
+---
+
+## ⚠️ Known Production Issues (as of June 1, 2026)
+
+### 1. Dashboard does not update automatically
+- **Symptom:** Production dashboard shows old issue date. `/?date=2026-06-01` returns nothing or shows fallback.
+- **Root cause:** `landing/data/issues/YYYY-MM-DD.json` was generated locally but **never committed and pushed** to GitHub. Vercel only serves files that are in the repo. The 7:00 AM GitHub Actions workflow (`generate-brief-0700.yml`) must commit and push `landing/data/` after generation.
+- **Status:** Workflow exists and is configured correctly. Manual trigger needed to confirm end-to-end. The scheduled cron (`30 1 * * *`) has not been verified live yet.
+- **Manual fix:**
+  ```bash
+  python newsletter/main.py --generate-today --force
+  python newsletter/main.py --check-today
+  git add landing/data/
+  git commit -m "Generate PeopleOS Brief for YYYY-MM-DD"
+  git push origin main
+  ```
+  After push, Vercel redeploys in ~1-2 min. Then `/?date=YYYY-MM-DD` works.
+
+### 2. Subscribe button not working
+- **Symptom:** Spinner shows, then error message: "Something went wrong. Please try again." or "Subscription error: ...". Spinner may stay visible after error.
+- **Root cause A — backend:** `api/subscribe.py` was originally written with old Vercel function-handler format (`def handler(request, response=None)`) which is incompatible with the current runtime. Rewritten as `BaseHTTPRequestHandler` using `supabase-py` client. Now returns descriptive errors.
+- **Root cause B — spinner CSS:** `.loader { display: inline-block }` in `style.css` overrides the HTML `hidden` attribute. Fixed by switching to `element.style.display` instead of `element.hidden` in `subscribe.js`.
+- **Status:** Both fixes committed and pushed (`fd5a899`). Needs production verification.
+- **If still failing after deploy:** The actual error text will now appear in the UI. Common causes:
+  - `SUPABASE_URL` or `SUPABASE_SERVICE_ROLE_KEY` not set in Vercel env vars → shows "not configured"
+  - `subscribers` table not created → shows "table not found. Run supabase/schema.sql"
+  - Invalid API key → shows "authentication failed"
+- **Verification:**
+  ```bash
+  curl -i -X POST https://YOUR_DOMAIN/api/subscribe \
+    -H "Content-Type: application/json" \
+    -d '{"email":"test@example.com","source":"dashboard"}'
+  ```
+
+---
+
 ## 1. Product Overview
 
 **PeopleOS Brief** is a dashboard-first daily executive intelligence product.
