@@ -62,7 +62,7 @@
       btn.textContent = 'Checking...';
       msg.textContent = '';
       try {
-        const res = await fetch('/api/admin/login', {
+        const res = await fetch('/api/admin?action=status', {
           method: 'POST',
           headers: {'Content-Type': 'application/json'},
           body: JSON.stringify({token}),

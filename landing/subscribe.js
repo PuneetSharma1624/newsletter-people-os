@@ -14,7 +14,7 @@
   // ─── READER COUNT ────────────────────────────────────────────
   async function loadReaderCount() {
     try {
-      const res = await fetch('/api/public/stats?t=' + Date.now(), { cache: 'no-store' });
+      const res = await fetch('/api/stats?t=' + Date.now(), { cache: 'no-store' });
       if (!res.ok) return;
       const data = await res.json();
       if (data.ok) {

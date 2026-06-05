@@ -72,7 +72,7 @@ def main():
                         f"sections={len(issue3.get('sections',[]))} items={issue3.get('total_dashboard_items',0)}")
 
     # 4. Public stats
-    ok4, stats = _get(f"{BASE_URL}/api/public/stats?t=check", "public stats")
+    ok4, stats = _get(f"{BASE_URL}/api/stats?t=check", "public stats")
     if ok4 and stats.get('ok'):
         pv = stats.get('total_page_views', stats.get('total_visits', '?'))
         sb = stats.get('total_subscribers', '?')
@@ -82,7 +82,7 @@ def main():
 
     # 5. Analytics visit
     try:
-        req = urllib.request.Request(f"{BASE_URL}/api/analytics/visit", data=b'{}',
+        req = urllib.request.Request(f"{BASE_URL}/api/visit", data=b'{}',
                                      headers={'Content-Type': 'application/json'}, method='POST')
         with urllib.request.urlopen(req, timeout=10) as r:
             d = json.loads(r.read())

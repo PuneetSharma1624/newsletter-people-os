@@ -31,7 +31,11 @@
       "Bash(sed -n '370,373p' landing/style.css)",
       "Bash(sed -n '484,488p' landing/style.css)",
       "Bash(python -m compileall api/ newsletter/ scripts/ -q)",
-      "Bash(python newsletter/main.py --audit-links)"
+      "Bash(python newsletter/main.py --audit-links)",
+      "Bash(sed -i \"s|/api/public/stats|/api/stats|g\" landing/admin.js)",
+      "Bash(sed -i \"s|/api/admin/login|/api/admin?action=status|g\" landing/admin.html)",
+      "Bash(python -m compileall api/ -q)",
+      "Bash(python -m pytest tests/test_idempotency.py -q)"
     ]
   }
 }

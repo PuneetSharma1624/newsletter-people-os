@@ -34,10 +34,9 @@
 
       let data;
       try {
-        const res = await fetch('/api/admin/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ token: tokenVal }),
+        const res = await fetch('/api/admin?action=status', {
+          method: 'GET',
+          headers: { 'Authorization': `Bearer ${tokenVal}` },
         });
         try { data = await res.json(); }
         catch (_) { data = { ok: false, error: `Server error (HTTP ${res.status})` }; }
@@ -49,9 +48,9 @@
         return;
       }
 
-      if (data.ok || data.success) {
-        sessionStorage.setItem('admin_token', data.session || tokenVal);
-        localStorage.setItem('admin_token',   data.session || tokenVal);
+      if (data.ok) {
+        sessionStorage.setItem('admin_token', tokenVal);
+        localStorage.setItem('admin_token',   tokenVal);
         window.location.href = '/admin/dashboard/';
       } else {
         msg.textContent = data.error || data.message || 'Invalid token.';
@@ -108,7 +107,7 @@
   // ─── ADMIN STATS ────────────────────────────────────────────
   async function loadAdminStats() {
     try {
-      const res = await fetch('/api/admin/stats', { headers: authHeaders() });
+      const res = await fetch('/api/admin?action=stats', { headers: authHeaders() });
       if (res.status === 401) { logout(); return; }
       const data = await res.json();
       if (!data.ok) return;
@@ -137,7 +136,7 @@
   // ─── STATUS ─────────────────────────────────────────────────
   async function loadStatus() {
     try {
-      const res = await fetch('/api/admin/status', { headers: authHeaders() });
+      const res = await fetch('/api/admin?action=status', { headers: authHeaders() });
       if (res.status === 401) { logout(); return; }
       const data = await res.json();
       if (!data.ok) { addLog('Status load failed: ' + data.message, 'err'); return; }
@@ -199,33 +198,32 @@
 
   async function loadNotifications() {
     try {
-      const res = await fetch('/api/admin/notifications', { headers: authHeaders() });
+      const res = await fetch('/api/admin?action=stats', { headers: authHeaders() });
       if (res.status === 401) return;
       const data = await res.json();
       if (!data.ok) return;
 
-      _notifCount = data.new_subscriber_count || 0;
+      // Use new_today as notification count
+      _notifCount = data.new_today || 0;
       const badge = document.getElementById('notifBadge');
       const btn   = document.getElementById('notifBtn');
       if (badge) {
         badge.textContent = _notifCount > 99 ? '99+' : String(_notifCount);
         badge.hidden      = _notifCount === 0;
       }
-      if (btn) btn.title = _notifCount > 0 ? `${_notifCount} new subscriber${_notifCount > 1 ? 's' : ''}` : 'No new subscribers';
+      if (btn) btn.title = _notifCount > 0 ? `${_notifCount} new subscriber${_notifCount > 1 ? 's' : ''} today` : 'No new subscribers today';
 
-      // Populate panel list
       const list = document.getElementById('notifList');
       if (list) {
         if (_notifCount === 0) {
-          list.innerHTML = '<div class="notif-empty">No new subscribers since last check.</div>';
-        } else {
-          list.innerHTML = data.latest_subscribers.map(s => {
-            const when = s.subscribed_at ? new Date(s.subscribed_at).toLocaleString() : '';
-            return `<div class="notif-item">
-              <span class="notif-email">${esc(s.email)}</span>
-              <span class="notif-meta">${esc(s.source||'dashboard')} · ${when}</span>
-            </div>`;
-          }).join('');
+          list.innerHTML = '<div class="notif-empty">No new subscribers today.</div>';
+        } else if (data.last_subscriber) {
+          const s = data.last_subscriber;
+          const when = s.created_at ? new Date(s.created_at).toLocaleString() : '';
+          list.innerHTML = `<div class="notif-item">
+            <span class="notif-email">${esc(s.email || '')}</span>
+            <span class="notif-meta">Latest · ${when}</span>
+          </div><div class="notif-item"><span class="notif-meta">${_notifCount} new subscriber${_notifCount > 1 ? 's' : ''} today total</span></div>`;
         }
       }
     } catch (_) {}
@@ -236,19 +234,14 @@
     if (panel) panel.hidden = !panel.hidden;
   }
 
-  async function markNotificationsSeen() {
-    try {
-      await fetch('/api/admin/notifications/mark-seen', {
-        method: 'POST', headers: authHeaders(),
-      });
-      _notifCount = 0;
-      const badge = document.getElementById('notifBadge');
-      if (badge) badge.hidden = true;
-      const list = document.getElementById('notifList');
-      if (list) list.innerHTML = '<div class="notif-empty">All caught up.</div>';
-      const panel = document.getElementById('notifPanel');
-      if (panel) panel.hidden = true;
-    } catch (_) {}
+  function markNotificationsSeen() {
+    _notifCount = 0;
+    const badge = document.getElementById('notifBadge');
+    if (badge) badge.hidden = true;
+    const list = document.getElementById('notifList');
+    if (list) list.innerHTML = '<div class="notif-empty">All caught up.</div>';
+    const panel = document.getElementById('notifPanel');
+    if (panel) panel.hidden = true;
   }
 
   // Close notif panel on outside click
@@ -267,7 +260,7 @@
   // ─── ACTION LOG UTILITY ─────────────────────────────────────
   async function logAction(actionName, status, details = {}) {
     try {
-      await fetch('/api/admin/action-log', {
+      await fetch('/api/admin?action=log', {
         method: 'POST',
         headers: authHeaders(),
         body: JSON.stringify({
@@ -290,7 +283,7 @@
     if (!panel) return;
     panel.innerHTML = '<div style="color:var(--text-dim);font-size:0.8rem;padding:8px 0;">Loading…</div>';
     try {
-      const res = await fetch('/api/admin/action-logs', { headers: authHeaders() });
+      const res = await fetch('/api/admin?action=logs', { headers: authHeaders() });
       const data = await res.json();
       if (!data.ok || !data.logs?.length) {
         panel.innerHTML = '<div style="color:var(--text-dim);font-size:0.8rem;padding:8px 0;">No action logs yet.</div>';
@@ -315,7 +308,7 @@
     // Get before count
     let beforeCount = '?';
     try {
-      const sr = await fetch('/api/public/stats?t=' + Date.now(), { cache: 'no-store' });
+      const sr = await fetch('/api/stats?t=' + Date.now(), { cache: 'no-store' });
       const sd = await sr.json();
       beforeCount = sd.total_subscribers ?? '?';
     } catch (_) {}
@@ -333,7 +326,7 @@
       let afterCount = '?';
       try {
         await new Promise(r => setTimeout(r, 600));
-        const sr2 = await fetch('/api/public/stats?t=' + Date.now(), { cache: 'no-store' });
+        const sr2 = await fetch('/api/stats?t=' + Date.now(), { cache: 'no-store' });
         const sd2 = await sr2.json();
         afterCount = sd2.total_subscribers ?? '?';
       } catch (_) {}
@@ -356,7 +349,7 @@
     addLog('Simulate demo refresh…', 'info');
     await logAction('demo_refresh', 'started');
     try {
-      const res = await fetch('/api/admin/demo-refresh', {
+      const res = await fetch('/api/admin?action=demo_refresh', {
         method: 'POST', headers: authHeaders(),
       });
       const data = await res.json();
@@ -380,7 +373,7 @@
     addLog('Checking today\'s issue…', 'info');
     await logAction('check_today_issue', 'started');
     try {
-      const res = await fetch('/api/admin/status', { headers: authHeaders() });
+      const res = await fetch('/api/admin?action=status', { headers: authHeaders() });
       const data = await res.json();
       if (data.ok) {
         const today = data.today || '';
@@ -405,7 +398,7 @@
     addLog('Checking production JSON…', 'info');
     await logAction('check_production_json', 'started');
     try {
-      const res = await fetch('/api/admin/status', { headers: authHeaders() });
+      const res = await fetch('/api/admin?action=status', { headers: authHeaders() });
       const data = await res.json();
       const today = data.today || new Date().toISOString().split('T')[0];
       const baseUrl = window.location.origin;
@@ -432,7 +425,7 @@
     addLog('Refreshing public stats…', 'info');
     await logAction('refresh_public_stats', 'started');
     try {
-      const res = await fetch('/api/public/stats?t=' + Date.now(), { cache: 'no-store' });
+      const res = await fetch('/api/stats?t=' + Date.now(), { cache: 'no-store' });
       const data = await res.json();
       addLog(`Stats: page_views=${data.total_page_views ?? data.total_visits ?? '?'} subscribers=${data.total_subscribers ?? '?'} unique_today=${data.unique_visitors_today ?? '?'}`, 'ok');
       await logAction('refresh_public_stats', 'success', { response: data });
@@ -447,7 +440,7 @@
   async function trigger(mode, force) {
     addLog(`Triggering: mode=${mode}${force ? ' (force)' : ''}…`, 'info');
     try {
-      const res = await fetch('/api/admin/trigger', {
+      const res = await fetch('/api/admin?action=trigger', {
         method: 'POST',
         headers: authHeaders(),
         body: JSON.stringify({ mode, force: !!force }),
@@ -472,7 +465,7 @@
     if (!email) return;
     addLog(`Sending test email to ${email}…`, 'info');
     try {
-      const res = await fetch('/api/admin/trigger', {
+      const res = await fetch('/api/admin?action=trigger', {
         method: 'POST',
         headers: authHeaders(),
         body: JSON.stringify({ mode: 'test_email', test_email: email }),
@@ -487,7 +480,7 @@
   async function refreshIndex() {
     addLog('Refreshing archive index…', 'info');
     try {
-      await fetch('/api/admin/trigger', {
+      await fetch('/api/admin?action=trigger', {
         method: 'POST',
         headers: authHeaders(),
         body: JSON.stringify({ mode: 'generate_today' }),
@@ -510,7 +503,7 @@
       closeConfirm();
       addLog("Triggering today's live send (send_live_today)…", 'warn');
       try {
-        const res = await fetch('/api/admin/trigger', {
+        const res = await fetch('/api/admin?action=trigger', {
           method: 'POST',
           headers: authHeaders(),
           body: JSON.stringify({ mode: 'send_live_today', confirm_live_send: true }),
@@ -552,7 +545,7 @@
     const since  = document.getElementById('subSinceFilter')?.value  || '';
     _subFilter   = { status, since };
 
-    let url = '/api/admin/subscribers';
+    let url = '/api/admin?action=subscribers';
     const parts = [];
     if (status !== 'all') parts.push(`status=${encodeURIComponent(status)}`);
     if (since) parts.push(`since=${encodeURIComponent(since)}`);

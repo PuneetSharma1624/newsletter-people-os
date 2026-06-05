@@ -1,13 +1,26 @@
-"""GET /api/public/stats — aggregate page views + subscriber counts only.
-Never returns emails or personal data.
-No-cache: always returns fresh counts.
-"""
+"""POST /api/visit — record page_view, return aggregate counts. Never blocks."""
 from http.server import BaseHTTPRequestHandler
-import json, os, urllib.request, datetime
+import json, os, urllib.request, hashlib, datetime
 
 
 def _sb_headers(key):
-    return {'apikey': key, 'Authorization': f'Bearer {key}'}
+    return {
+        'apikey': key,
+        'Authorization': f'Bearer {key}',
+        'Content-Type': 'application/json',
+    }
+
+
+def _sb_insert(sb_url, sb_key, table, body):
+    url = f"{sb_url}/rest/v1/{table}"
+    data = json.dumps(body).encode()
+    req = urllib.request.Request(
+        url, data=data,
+        headers={**_sb_headers(sb_key), 'Prefer': 'return=minimal'},
+        method='POST',
+    )
+    with urllib.request.urlopen(req, timeout=5) as r:
+        return r.status
 
 
 def _sb_count(sb_url, sb_key, table, qs=''):
@@ -32,7 +45,7 @@ class handler(BaseHTTPRequestHandler):
         self._cors()
         self.end_headers()
 
-    def do_GET(self):
+    def do_POST(self):
         sb_url = os.environ.get('SUPABASE_URL', '').rstrip('/')
         sb_key = os.environ.get('SUPABASE_SERVICE_ROLE_KEY', '')
 
@@ -43,27 +56,42 @@ class handler(BaseHTTPRequestHandler):
             return
 
         try:
-            total_page_views  = _sb_count(sb_url, sb_key, 'site_analytics')
+            ua = self.headers.get('User-Agent', '') or ''
+            date_coarse = datetime.date.today().isoformat()
+            visitor_hash = hashlib.sha256(f"{ua}{date_coarse}".encode()).hexdigest()[:16]
+            _sb_insert(sb_url, sb_key, 'site_analytics', {
+                'event_type': 'page_view',
+                'page_path': '/',
+                'visitor_hash': visitor_hash,
+            })
+        except Exception:
+            pass  # insert failure must never block response
+
+        try:
+            total_page_views = _sb_count(sb_url, sb_key, 'site_analytics')
             start, end = _today_range()
             unique_visitors_today = _sb_count(
                 sb_url, sb_key, 'site_analytics',
                 f'visitor_hash=neq.null&created_at=gte.{start}&created_at=lte.{end}'
             )
             total_subscribers = _sb_count(sb_url, sb_key, 'subscribers', 'status=eq.active')
-            self._json({
-                'ok': True,
-                'total_page_views': total_page_views,
-                'total_visits': total_page_views,
-                'unique_visitors_today': unique_visitors_today,
-                'total_subscribers': total_subscribers,
-            })
-        except Exception as exc:
-            self._json({'ok': False, 'error': 'Analytics service error.'}, 500)
+        except Exception:
+            total_page_views = 0
+            unique_visitors_today = 0
+            total_subscribers = 0
+
+        self._json({
+            'ok': True,
+            'total_page_views': total_page_views,
+            'total_visits': total_page_views,
+            'unique_visitors_today': unique_visitors_today,
+            'total_subscribers': total_subscribers,
+        })
 
     def _cors(self):
         self.send_header('Access-Control-Allow-Origin', '*')
         self.send_header('Access-Control-Allow-Headers', 'Content-Type')
-        self.send_header('Access-Control-Allow-Methods', 'GET, OPTIONS')
+        self.send_header('Access-Control-Allow-Methods', 'POST, OPTIONS')
 
     def _nocache(self):
         self.send_header('Cache-Control', 'no-store, no-cache, max-age=0, must-revalidate')

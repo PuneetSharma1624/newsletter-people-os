@@ -89,20 +89,20 @@ class TestSectionModel:
 
 class TestDemoData:
     def test_3_dates(self):
-        from api.demo_data import get_demo_dates
+        from newsletter.demo import get_demo_dates
         assert len(get_demo_dates()) == 3
 
     def test_12_sections(self):
-        from api.demo_data import get_demo_issue
+        from newsletter.demo import get_demo_issue
         assert len(get_demo_issue()["sections"]) == 12
 
     def test_6_items_per_section(self):
-        from api.demo_data import get_demo_issue
+        from newsletter.demo import get_demo_issue
         for s in get_demo_issue()["sections"]:
             assert len(s["items"]) == 6, f"{s['code']} has {len(s['items'])} items"
 
     def test_216_total_items(self):
-        from api.demo_data import get_demo_dates, get_demo_issue
+        from newsletter.demo import get_demo_dates, get_demo_issue
         total = sum(
             len(s["items"])
             for d in get_demo_dates()
@@ -111,7 +111,7 @@ class TestDemoData:
         assert total >= 216, f"Only {total} items"
 
     def test_section_ids_match_taxonomy(self):
-        from api.demo_data import get_demo_issue
+        from newsletter.demo import get_demo_issue
         from newsletter.sections import SECTION_IDS
         assert [s["section_id"] for s in get_demo_issue()["sections"]] == SECTION_IDS
 

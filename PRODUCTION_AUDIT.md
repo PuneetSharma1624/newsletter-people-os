@@ -1,5 +1,54 @@
 # PeopleOS Brief — Production Audit
-Generated: 2026-06-05
+Generated: 2026-06-05 | Updated: 2026-06-05 (Hobby plan consolidation)
+
+---
+
+## ✅ Issue 0 (FIXED): Vercel Hobby plan exceeded function limit
+- **Symptom**: `No more than 12 Serverless Functions can be added to a Deployment on the Hobby plan`
+- **Root cause**: 20 Python files under `/api` = 20 serverless functions. Plus explicit `builds` array in `vercel.json` listing each file.
+- **File(s)**: `vercel.json`, all `api/*.py`
+- **Layer**: Vercel deployment
+- **Fix applied**:
+  - Deleted 17 excess API files
+  - Created 3 new consolidated files: `api/stats.py`, `api/visit.py`, `api/admin.py`
+  - Removed `builds` array from `vercel.json` (Vercel auto-detects Python in `/api`)
+  - Moved demo data to `newsletter/demo.py` (not counted as a function)
+  - Updated all frontend to use new endpoints
+- **Final function count**: **6** (`subscribe`, `unsubscribe`, `stats`, `visit`, `admin`, `health`)
+- **Verification**: `find api -name "*.py" | wc -l` → 6 ✓
+- **Remaining risk**: None — 6 well within Hobby limit of 12
+
+## Vercel Hobby Function Budget
+
+| | Count |
+|---|---|
+| Before | 20 functions |
+| After | **6 functions** |
+| Hobby limit | 12 |
+| Headroom | 6 spare |
+
+**Final `/api` file list:**
+```
+api/admin.py       ← consolidated all admin_*.py (status/trigger/logs/subscribers/demo_refresh/check)
+api/health.py      ← simple diagnostic
+api/stats.py       ← GET public stats (renamed from public_stats.py)
+api/subscribe.py   ← POST subscribe
+api/unsubscribe.py ← GET/POST unsubscribe
+api/visit.py       ← POST page view (renamed from analytics_visit.py)
+```
+
+**Deleted (17 files):**
+`admin_action_log.py`, `admin_action_logs.py`, `admin_demo_refresh.py`, `admin_login.py`,
+`admin_notifications.py`, `admin_notifications_mark_seen.py`, `admin_stats.py`,
+`admin_status.py`, `admin_subscribers.py`, `admin_trigger.py`, `analytics_visit.py`,
+`archive_list.py`, `dates.py`, `demo_data.py`, `issue.py`, `latest_brief.py`, `public_stats.py`
+
+**Route compatibility via `vercel.json` rewrites:**
+```
+/api/public/stats    → /api/stats.py
+/api/analytics/visit → /api/visit.py
+/api/admin/*         → /api/admin.py (query param routing)
+```
 
 ---
 

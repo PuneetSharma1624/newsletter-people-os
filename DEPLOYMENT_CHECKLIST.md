@@ -45,13 +45,28 @@ After all secrets are set:
 - Wait ~15 minutes for generation to complete
 - Check Actions tab for success/failure
 
+## 5b. Confirm function count (Hobby plan safety check)
+After deploy, go to Vercel → Project → Functions tab.
+Must show **≤ 6 functions**:
+- `api/admin`
+- `api/health`
+- `api/stats`
+- `api/subscribe`
+- `api/unsubscribe`
+- `api/visit`
+
+If more appear, check for stray `.py` files under `/api`.
+
 ## 6. Verify production data
 After workflow runs:
 ```
-https://yourdomain.com/data/dates.json       → should include today's date
+https://yourdomain.com/data/dates.json              → should include today's date
 https://yourdomain.com/data/issues/YYYY-MM-DD.json  → today's issue
-https://yourdomain.com/api/public/stats      → should return JSON with counts
-https://yourdomain.com/api/subscribe         → POST test
+https://yourdomain.com/api/stats                    → GET public stats
+https://yourdomain.com/api/subscribe                → POST subscribe
+https://yourdomain.com/api/visit                    → POST page view
+https://yourdomain.com/api/health                   → GET health check
+https://yourdomain.com/api/admin?action=status      → GET admin status (requires auth)
 ```
 
 ## 7. Test subscribe button

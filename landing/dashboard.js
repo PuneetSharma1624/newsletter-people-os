@@ -446,7 +446,7 @@
 
   async function recordVisit() {
     try {
-      const res = await fetch('/api/analytics/visit', { method: 'POST', cache: 'no-store' });
+      const res = await fetch('/api/visit', { method: 'POST', cache: 'no-store' });
       const data = res.ok ? await res.json().catch(() => null) : null;
       const ids = ['kpiVisitorsVal', 'kpiSubscribersVal', 'kpiPageViewsVal', 'kpiUniqueVisitorsVal'];
       ids.forEach(id => { if (!document.getElementById(id)) console.warn('PeopleOS: missing element #' + id); });

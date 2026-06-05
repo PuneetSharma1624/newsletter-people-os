@@ -2,6 +2,46 @@
 
 ---
 
+## ✅ Architecture Changes (2026-06-05)
+
+### Vercel Hobby Plan — Function Count Fixed
+Deployment was failing: `No more than 12 Serverless Functions on Hobby plan`.
+**Fixed by consolidating 20 → 6 functions.**
+
+Final `/api` structure:
+```
+api/subscribe.py   POST /api/subscribe
+api/unsubscribe.py GET|POST /api/unsubscribe
+api/stats.py       GET /api/stats
+api/visit.py       POST /api/visit
+api/admin.py       GET|POST /api/admin?action=<action>
+api/health.py      GET /api/health
+```
+
+Legacy routes rewired (no code changes needed):
+```
+/api/public/stats     → /api/stats
+/api/analytics/visit  → /api/visit
+/api/admin/*          → /api/admin (query param routing)
+```
+
+### Key fixes (2026-06-05)
+- Subscribe spinner: `AbortController` 15s timeout added (root cause of stuck spinner)
+- Analytics: no-cache headers; `total_page_views` + `unique_visitors_today` fields
+- Dashboard: stale date fallback warning; console debug logging
+- Hero: CSS cosmic design (Inter Tight, aurora glows, grain) — no SVG illustration
+- Admin: consolidated to single `api/admin.py` endpoint with `?action=` routing
+- Action logs: Supabase `action_logs` table + admin UI panel
+- GitHub Actions: all 3 workflows verified correct (7:00/7:15/7:30 IST)
+
+### Current status
+- **Deployment**: Should succeed (6 functions)
+- **Dashboard content**: Stuck at 2026-06-01 — needs GitHub Secrets set + manual workflow trigger
+- **Subscribe**: Fixed in code; needs Supabase env vars in Vercel
+- **Stats**: Fixed in code; needs Supabase env vars in Vercel
+
+---
+
 ## ⚠️ Known Production Issues (as of June 1, 2026)
 
 ### 1. Dashboard does not update automatically
