@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 400" preserveAspectRatio="xMidYMax slice">
+  <defs>
+    <linearGradient id="hill1Grad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#0b1f3a"/>
+      <stop offset="100%" stop-color="#071225"/>
+    </linearGradient>
+    <linearGradient id="hill2Grad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#081630"/>
+      <stop offset="100%" stop-color="#050e1e"/>
+    </linearGradient>
+    <linearGradient id="fgGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#020817"/>
+      <stop offset="100%" stop-color="#020817"/>
+    </linearGradient>
+  </defs>
+  <!-- Far hills -->
+  <path d="M0,280 Q180,180 360,220 Q540,260 720,170 Q900,80 1080,160 Q1260,240 1440,200 L1440,400 L0,400 Z" fill="url(#hill1Grad)" opacity="0.7"/>
+  <!-- Mid hills -->
+  <path d="M0,320 Q120,260 280,290 Q440,320 600,250 Q760,180 920,240 Q1080,300 1240,260 Q1360,230 1440,270 L1440,400 L0,400 Z" fill="url(#hill2Grad)" opacity="0.85"/>
+  <!-- Foreground silhouette -->
+  <path d="M0,360 Q80,340 160,355 Q240,370 320,348 Q400,326 480,345 Q560,364 640,350 Q720,336 800,352 Q880,368 960,355 Q1040,342 1120,358 Q1200,374 1280,360 Q1360,346 1440,362 L1440,400 L0,400 Z" fill="url(#fgGrad)"/>
+  <!-- Grass blades foreground left -->
+  <path d="M40,380 Q38,355 44,340 Q46,355 48,380Z" fill="#020817" opacity="0.9"/>
+  <path d="M55,380 Q50,348 58,330 Q62,348 64,380Z" fill="#020817" opacity="0.85"/>
+  <path d="M70,380 Q68,362 72,350 Q75,362 76,380Z" fill="#020817" opacity="0.8"/>
+  <path d="M20,380 Q19,365 22,355 Q24,365 25,380Z" fill="#020817" opacity="0.75"/>
+  <!-- Grass blades foreground right -->
+  <path d="M1380,380 Q1378,352 1384,338 Q1387,352 1388,380Z" fill="#020817" opacity="0.9"/>
+  <path d="M1395,380 Q1390,355 1398,342 Q1402,355 1403,380Z" fill="#020817" opacity="0.85"/>
+  <path d="M1410,380 Q1408,365 1413,356 Q1416,365 1416,380Z" fill="#020817" opacity="0.8"/>
+  <path d="M1425,380 Q1424,368 1427,360 Q1429,368 1430,380Z" fill="#020817" opacity="0.75"/>
+  <!-- Grass blades mid -->
+  <path d="M680,380 Q678,358 682,345 Q685,358 686,380Z" fill="#020817" opacity="0.8"/>
+  <path d="M695,380 Q692,362 698,350 Q701,362 702,380Z" fill="#020817" opacity="0.75"/>
+  <path d="M710,380 Q709,370 712,362 Q714,370 715,380Z" fill="#020817" opacity="0.7"/>
+</svg>

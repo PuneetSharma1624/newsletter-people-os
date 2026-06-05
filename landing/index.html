@@ -24,6 +24,50 @@
     </div>
   </nav>
 
+  <!-- HERO -->
+  <section class="hero-night" aria-label="PeopleOS Brief hero">
+    <div class="hero-bg">
+      <div class="hero-bg__base"></div>
+      <div class="hero-bg__nebula"></div>
+      <img class="hero-bg__stars" src="/assets/stars-layer.svg" alt="" aria-hidden="true" loading="eager"/>
+      <div class="hero-bg__moon" aria-hidden="true">
+        <svg viewBox="0 0 80 80" width="72" height="72">
+          <circle cx="42" cy="38" r="28" fill="#1e3a5f"/>
+          <circle cx="52" cy="30" r="23" fill="#071225"/>
+          <circle cx="42" cy="38" r="33" fill="none" stroke="#bfdbfe" stroke-width="0.6" opacity="0.22"/>
+        </svg>
+      </div>
+      <img class="hero-bg__hills" src="/assets/hills-layer.svg" alt="" aria-hidden="true" loading="eager"/>
+    </div>
+
+    <div class="hero-content">
+      <div class="hero-text">
+        <div class="hero-eyebrow">
+          <span class="eyebrow-dot"></span>
+          Daily Executive Intelligence
+        </div>
+        <h1 class="hero-headline">See tomorrow's signals<br class="hero-br"/> before the noise.</h1>
+        <p class="hero-sub">PeopleOS Brief turns daily market, AI, HR, research, and economic updates into one executive intelligence dashboard. 12 sections. 72 signals. Every morning at 7&nbsp;AM&nbsp;IST.</p>
+        <div class="hero-ctas">
+          <a href="#dashboardMain" class="btn-hero-primary">Read Today's Brief</a>
+          <a href="#subscribe-section" class="btn-hero-secondary">Subscribe Free</a>
+        </div>
+        <div class="hero-signal-tags">
+          <span class="signal-tag signal-tag--markets">Markets</span>
+          <span class="signal-tag signal-tag--ai">AI &amp; Research</span>
+          <span class="signal-tag signal-tag--hr">Human Capital</span>
+          <span class="signal-tag signal-tag--econ">Economics</span>
+          <span class="signal-tag signal-tag--major">Major Updates</span>
+        </div>
+      </div>
+
+      <div class="hero-illustration" aria-hidden="true">
+        <img class="hero-constellation" src="/assets/constellation-map.svg" alt=""/>
+        <img class="hero-scout" src="/assets/hero-night-scout.svg" alt="Signal watcher with telescope under night sky"/>
+      </div>
+    </div>
+  </section>
+
   <!-- DATE BAR -->
   <div class="date-bar" id="dateBar">
     <div class="date-bar-inner">
@@ -51,16 +95,15 @@
     </div>
   </div>
 
-  <!-- MAIN DASHBOARD -->
+  <!-- MAIN DASHBOARD — IDs preserved for dashboard.js -->
   <main class="dashboard-main" id="dashboardMain">
-
     <div class="state-loading" id="stateLoading">
       <div class="spinner"></div>
-      <p>Loading intelligence…</p>
+      <p>Loading intelligence&hellip;</p>
     </div>
 
     <div class="state-empty" id="stateEmpty" hidden>
-      <div class="empty-icon">📭</div>
+      <div class="empty-icon">&#128589;</div>
       <h2>No brief published for this date.</h2>
       <p>Briefs are published daily at 7:00 AM IST. Check back tomorrow.</p>
       <a href="/" class="btn-primary">View latest brief</a>
@@ -69,41 +112,48 @@
     <div id="issueContent" hidden>
       <div class="issue-header" id="issueHeader"></div>
       <div class="demo-banner" id="demoBanner" hidden>
-        <span>⚠ Demo mode — real intelligence published daily at 7:00 AM IST.</span>
+        <span>&#9888; Demo mode &mdash; real intelligence published daily at 7:00 AM IST.</span>
       </div>
       <div class="section-command" id="sectionCommand"></div>
-      <!-- Selected section banner — shown when a section is active -->
       <div id="selectedSectionBanner" class="selected-section-banner" hidden></div>
       <div class="sections-grid" id="sectionsGrid"></div>
     </div>
-
   </main>
 
-  <!-- SUBSCRIBE SECTION -->
-  <section id="subscribe-section" style="padding:64px 24px 80px;max-width:580px;margin:0 auto;text-align:center;">
-    <p style="font-size:0.68rem;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:14px;">Daily Digest</p>
-    <h2 style="font-size:1.6rem;font-weight:800;color:var(--white);margin-bottom:10px;letter-spacing:-0.03em;line-height:1.2;">Get the executive cut in your inbox.</h2>
-    <p style="color:var(--text-muted);font-size:0.875rem;margin-bottom:8px;line-height:1.7;">Top 2 signals from each section. 24 updates. One clean morning brief. Free. 7:00 AM IST.</p>
-    <p id="readerCountLine" style="font-size:0.78rem;color:var(--text-dim);margin-bottom:24px;">Join readers getting the executive cut every morning.</p>
-    <form class="subscribe-form" id="subscribeForm" novalidate>
-      <div class="input-row" style="max-width:460px;margin:0 auto;">
-        <input type="email" id="emailInput" class="email-input" placeholder="your@email.com" autocomplete="email" required />
-        <button type="submit" class="btn-subscribe" id="submitBtn">
-          <span id="btnText">Subscribe free</span>
-          <span id="btnLoader" class="loader" hidden></span>
-        </button>
-      </div>
-      <div id="formMessage" class="form-message" aria-live="polite" style="text-align:center;"></div>
-    </form>
-    <p style="font-size:0.75rem;color:var(--text-dim);margin-top:14px;">No spam. No noise. Unsubscribe anytime.</p>
+  <!-- SUBSCRIBE -->
+  <section id="subscribe-section" class="subscribe-night">
+    <div class="subscribe-night-inner">
+      <p class="subscribe-eyebrow">Daily Digest</p>
+      <h2 class="subscribe-title">Get the executive cut in your inbox.</h2>
+      <p class="subscribe-sub">Top 2 signals from each section. 24 updates. One clean morning brief. Free. 7:00 AM IST.</p>
+      <p id="readerCountLine" class="subscribe-reader-count">Join readers getting the executive cut every morning.</p>
+      <form class="subscribe-form" id="subscribeForm" novalidate>
+        <div class="input-row" style="max-width:460px;margin:0 auto;">
+          <input type="email" id="emailInput" class="email-input" placeholder="your@email.com" autocomplete="email" required />
+          <button type="submit" class="btn-subscribe" id="submitBtn">
+            <span id="btnText">Subscribe free</span>
+            <span id="btnLoader" class="loader" hidden></span>
+          </button>
+        </div>
+        <div id="formMessage" class="form-message" aria-live="polite" style="text-align:center;"></div>
+      </form>
+      <p class="subscribe-privacy">No spam. No noise. Unsubscribe anytime.</p>
+    </div>
   </section>
 
-  <footer class="footer" style="max-width:1100px;margin:0 auto;padding:24px 32px 36px;">
-    <p>PeopleOS Brief &copy; 2026 · Puneet Sharma ·
-      <a href="/">Dashboard</a> ·
-      <a href="/archive/">Archive</a> ·
-      <a href="/admin/" style="color:var(--text-dim);">Admin</a>
-    </p>
+  <footer class="footer footer-night">
+    <div class="footer-night-inner">
+      <span class="footer-brand-dot"></span>
+      <span class="footer-brand-name">PeopleOS Brief</span>
+      <span class="footer-sep">&middot;</span>
+      <a href="/">Dashboard</a>
+      <span class="footer-sep">&middot;</span>
+      <a href="/archive/">Archive</a>
+      <span class="footer-sep">&middot;</span>
+      <a href="/admin/">Admin</a>
+      <span class="footer-sep">&middot;</span>
+      <span class="footer-copy">&copy; 2026 Puneet Sharma</span>
+    </div>
   </footer>
 
   <script src="/dashboard.js"></script>

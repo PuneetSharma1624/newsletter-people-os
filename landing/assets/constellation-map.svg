@@ -1,0 +1,116 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 400" fill="none">
+  <defs>
+    <radialGradient id="nodeGlow1" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#38bdf8" stop-opacity="0.8"/>
+      <stop offset="100%" stop-color="#38bdf8" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="nodeGlow2" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#a855f7" stop-opacity="0.8"/>
+      <stop offset="100%" stop-color="#a855f7" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="nodeGlow3" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#10b981" stop-opacity="0.8"/>
+      <stop offset="100%" stop-color="#10b981" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="nodeGlow4" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#f97316" stop-opacity="0.8"/>
+      <stop offset="100%" stop-color="#f97316" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="nodeGlow5" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#ef4444" stop-opacity="0.8"/>
+      <stop offset="100%" stop-color="#ef4444" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="nodeBlur">
+      <feGaussianBlur stdDeviation="2.5" result="coloredBlur"/>
+      <feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+
+  <!-- Constellation lines — thin, subtle -->
+  <!-- Markets cluster (blue) -->
+  <line x1="80"  y1="120" x2="160" y2="80"  stroke="#38bdf8" stroke-width="0.8" opacity="0.3"/>
+  <line x1="160" y1="80"  x2="240" y2="130" stroke="#38bdf8" stroke-width="0.8" opacity="0.3"/>
+  <line x1="240" y1="130" x2="190" y2="200" stroke="#38bdf8" stroke-width="0.6" opacity="0.2"/>
+  <line x1="80"  y1="120" x2="190" y2="200" stroke="#38bdf8" stroke-width="0.6" opacity="0.2"/>
+
+  <!-- AI cluster (purple) -->
+  <line x1="320" y1="60"  x2="400" y2="100" stroke="#a855f7" stroke-width="0.8" opacity="0.3"/>
+  <line x1="400" y1="100" x2="450" y2="50"  stroke="#a855f7" stroke-width="0.8" opacity="0.3"/>
+  <line x1="450" y1="50"  x2="520" y2="110" stroke="#a855f7" stroke-width="0.6" opacity="0.25"/>
+  <line x1="400" y1="100" x2="380" y2="170" stroke="#a855f7" stroke-width="0.6" opacity="0.2"/>
+
+  <!-- HR cluster (green) -->
+  <line x1="100" y1="290" x2="180" y2="260" stroke="#10b981" stroke-width="0.8" opacity="0.3"/>
+  <line x1="180" y1="260" x2="220" y2="320" stroke="#10b981" stroke-width="0.6" opacity="0.25"/>
+  <line x1="220" y1="320" x2="150" y2="350" stroke="#10b981" stroke-width="0.6" opacity="0.2"/>
+
+  <!-- Economics cluster (orange) -->
+  <line x1="380" y1="260" x2="460" y2="230" stroke="#f97316" stroke-width="0.8" opacity="0.3"/>
+  <line x1="460" y1="230" x2="530" y2="290" stroke="#f97316" stroke-width="0.6" opacity="0.25"/>
+  <line x1="530" y1="290" x2="480" y2="340" stroke="#f97316" stroke-width="0.6" opacity="0.2"/>
+
+  <!-- Cross-cluster connectors — very faint -->
+  <line x1="240" y1="130" x2="320" y2="60"  stroke="#ffffff" stroke-width="0.4" opacity="0.1" stroke-dasharray="4,8"/>
+  <line x1="190" y1="200" x2="380" y2="260" stroke="#ffffff" stroke-width="0.4" opacity="0.08" stroke-dasharray="4,8"/>
+  <line x1="380" y1="170" x2="380" y2="260" stroke="#ffffff" stroke-width="0.4" opacity="0.08" stroke-dasharray="4,8"/>
+
+  <!-- Major update node — center -->
+  <line x1="300" y1="200" x2="190" y2="200" stroke="#ef4444" stroke-width="0.6" opacity="0.2" stroke-dasharray="3,6"/>
+  <line x1="300" y1="200" x2="380" y2="170" stroke="#ef4444" stroke-width="0.6" opacity="0.2" stroke-dasharray="3,6"/>
+  <line x1="300" y1="200" x2="180" y2="260" stroke="#ef4444" stroke-width="0.4" opacity="0.15" stroke-dasharray="3,6"/>
+  <line x1="300" y1="200" x2="460" y2="230" stroke="#ef4444" stroke-width="0.4" opacity="0.15" stroke-dasharray="3,6"/>
+
+  <!-- MARKETS nodes (blue) -->
+  <circle cx="80"  cy="120" r="12" fill="url(#nodeGlow1)" filter="url(#nodeBlur)"/>
+  <circle cx="80"  cy="120" r="3.5" fill="#38bdf8" opacity="0.95"/>
+  <circle cx="160" cy="80"  r="16" fill="url(#nodeGlow1)" filter="url(#nodeBlur)"/>
+  <circle cx="160" cy="80"  r="5"  fill="#38bdf8" opacity="1"/>
+  <circle cx="240" cy="130" r="10" fill="url(#nodeGlow1)" filter="url(#nodeBlur)"/>
+  <circle cx="240" cy="130" r="3"  fill="#38bdf8" opacity="0.9"/>
+  <circle cx="190" cy="200" r="8"  fill="url(#nodeGlow1)" filter="url(#nodeBlur)"/>
+  <circle cx="190" cy="200" r="2.5" fill="#38bdf8" opacity="0.8"/>
+
+  <!-- AI nodes (purple) -->
+  <circle cx="320" cy="60"  r="14" fill="url(#nodeGlow2)" filter="url(#nodeBlur)"/>
+  <circle cx="320" cy="60"  r="4.5" fill="#a855f7" opacity="0.95"/>
+  <circle cx="400" cy="100" r="18" fill="url(#nodeGlow2)" filter="url(#nodeBlur)"/>
+  <circle cx="400" cy="100" r="6"  fill="#a855f7" opacity="1"/>
+  <circle cx="450" cy="50"  r="10" fill="url(#nodeGlow2)" filter="url(#nodeBlur)"/>
+  <circle cx="450" cy="50"  r="3"  fill="#a855f7" opacity="0.85"/>
+  <circle cx="520" cy="110" r="8"  fill="url(#nodeGlow2)" filter="url(#nodeBlur)"/>
+  <circle cx="520" cy="110" r="2.5" fill="#a855f7" opacity="0.8"/>
+  <circle cx="380" cy="170" r="9"  fill="url(#nodeGlow2)" filter="url(#nodeBlur)"/>
+  <circle cx="380" cy="170" r="2.8" fill="#a855f7" opacity="0.8"/>
+
+  <!-- HR nodes (green) -->
+  <circle cx="100" cy="290" r="12" fill="url(#nodeGlow3)" filter="url(#nodeBlur)"/>
+  <circle cx="100" cy="290" r="3.5" fill="#10b981" opacity="0.9"/>
+  <circle cx="180" cy="260" r="15" fill="url(#nodeGlow3)" filter="url(#nodeBlur)"/>
+  <circle cx="180" cy="260" r="5"  fill="#10b981" opacity="0.95"/>
+  <circle cx="220" cy="320" r="9"  fill="url(#nodeGlow3)" filter="url(#nodeBlur)"/>
+  <circle cx="220" cy="320" r="2.8" fill="#10b981" opacity="0.85"/>
+  <circle cx="150" cy="350" r="7"  fill="url(#nodeGlow3)" filter="url(#nodeBlur)"/>
+  <circle cx="150" cy="350" r="2"  fill="#10b981" opacity="0.75"/>
+
+  <!-- Economics nodes (orange) -->
+  <circle cx="380" cy="260" r="13" fill="url(#nodeGlow4)" filter="url(#nodeBlur)"/>
+  <circle cx="380" cy="260" r="4"  fill="#f97316" opacity="0.9"/>
+  <circle cx="460" cy="230" r="16" fill="url(#nodeGlow4)" filter="url(#nodeBlur)"/>
+  <circle cx="460" cy="230" r="5.5" fill="#f97316" opacity="0.95"/>
+  <circle cx="530" cy="290" r="9"  fill="url(#nodeGlow4)" filter="url(#nodeBlur)"/>
+  <circle cx="530" cy="290" r="2.8" fill="#f97316" opacity="0.85"/>
+  <circle cx="480" cy="340" r="7"  fill="url(#nodeGlow4)" filter="url(#nodeBlur)"/>
+  <circle cx="480" cy="340" r="2"  fill="#f97316" opacity="0.75"/>
+
+  <!-- Major Updates — center hub (red) -->
+  <circle cx="300" cy="200" r="22" fill="url(#nodeGlow5)" filter="url(#nodeBlur)"/>
+  <circle cx="300" cy="200" r="7"  fill="#ef4444" opacity="0.95"/>
+  <circle cx="300" cy="200" r="3"  fill="#ffffff" opacity="0.9"/>
+
+  <!-- Label hints — very faint -->
+  <text x="155" y="72"  font-family="Inter,sans-serif" font-size="7" fill="#38bdf8" opacity="0.5" text-anchor="middle">MARKETS</text>
+  <text x="400" y="92"  font-family="Inter,sans-serif" font-size="7" fill="#a855f7" opacity="0.5" text-anchor="middle">AI</text>
+  <text x="178" y="252" font-family="Inter,sans-serif" font-size="7" fill="#10b981" opacity="0.5" text-anchor="middle">HR</text>
+  <text x="458" y="222" font-family="Inter,sans-serif" font-size="7" fill="#f97316" opacity="0.5" text-anchor="middle">ECON</text>
+  <text x="300" y="192" font-family="Inter,sans-serif" font-size="6" fill="#ef4444" opacity="0.45" text-anchor="middle">MAJOR</text>
+</svg>
