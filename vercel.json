@@ -15,7 +15,8 @@
     { "src": "api/admin_notifications_mark_seen.py",     "use": "@vercel/python" },
     { "src": "api/admin_subscribers.py",                 "use": "@vercel/python" },
     { "src": "api/analytics_visit.py",                   "use": "@vercel/python" },
-    { "src": "api/public_stats.py",                      "use": "@vercel/python" }
+    { "src": "api/public_stats.py",                      "use": "@vercel/python" },
+    { "src": "api/health.py",                            "use": "@vercel/python" }
   ],
   "routes": [
     { "src": "/style.css",                "dest": "/landing/style.css" },
@@ -36,6 +37,7 @@
     { "src": "/api/admin/notifications/mark-seen",     "dest": "/api/admin_notifications_mark_seen.py" },
     { "src": "/api/admin/notifications",               "dest": "/api/admin_notifications.py" },
     { "src": "/api/admin/subscribers",                 "dest": "/api/admin_subscribers.py" },
+    { "src": "/api/health",                            "dest": "/api/health.py" },
     { "src": "/api/analytics/visit",                   "dest": "/api/analytics_visit.py" },
     { "src": "/api/public/stats",                      "dest": "/api/public_stats.py" },
     { "src": "/brief/?",                 "dest": "/landing/brief/index.html" },

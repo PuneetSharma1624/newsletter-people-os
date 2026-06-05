@@ -10,6 +10,13 @@ on:
         required: true
         default: "false"
 
+concurrency:
+  group: peopleos-brief-daily-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
 jobs:
   send:
     name: Send Newsletter (today's issue only)

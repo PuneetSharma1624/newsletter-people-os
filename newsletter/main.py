@@ -712,6 +712,55 @@ def _run_mark_generation_failed(error: str = "") -> None:
     print(f"Marked generation failed for {date}")
 
 
+def _run_preflight() -> None:
+    """Check required env vars and folder structure. Exit 0=ok, 1=fail."""
+    import pathlib
+
+    gen_vars = ["GROQ_API_KEY_1", "TAVILY_API_KEY"]
+    send_vars = [
+        "SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY",
+        "RESEND_API_KEY", "NEWSLETTER_FROM_EMAIL", "BASE_URL",
+    ]
+    required_dirs = [pathlib.Path("landing/data/issues"), pathlib.Path("newsletter")]
+
+    print("=== Preflight Check ===")
+    ok = True
+
+    for v in gen_vars:
+        val = os.getenv(v, "").strip()
+        status = "OK" if val else "MISSING"
+        if not val:
+            ok = False
+        print(f"  {status:7s} {v}")
+
+    for v in send_vars:
+        val = os.getenv(v, "").strip()
+        status = "OK" if val else "WARN"
+        print(f"  {status:7s} {v}")
+
+    for d in required_dirs:
+        exists = d.exists()
+        status = "OK" if exists else "MISSING"
+        if not exists:
+            ok = False
+        print(f"  {status:7s} {d}")
+
+    groq_keys = sum(1 for i in (1, 2, 3) if os.getenv(f"GROQ_API_KEY_{i}", "").strip())
+    print(f"  INFO    {groq_keys} Groq key(s) active")
+
+    if ok:
+        print("\n[OK] Preflight passed.")
+        sys.exit(0)
+    else:
+        print("\n[FAIL] Preflight failed.")
+        sys.exit(1)
+
+
+def _run_test_email(email: str) -> None:
+    """Canonical --test-email alias — same as --test."""
+    _run_test(email)
+
+
 # ─── ARGPARSE ────────────────────────────────────────────────────────────────
 
 def main() -> None:
@@ -736,6 +785,8 @@ def main() -> None:
     group.add_argument("--send-live-today", action="store_true", help="Send today's newsletter only if issue is complete.")
     group.add_argument("--mark-generation-started", action="store_true", help="Write in_progress to status.json.")
     group.add_argument("--mark-generation-failed", action="store_true", help="Write failed to status.json.")
+    group.add_argument("--preflight", action="store_true", help="Check env vars and folder structure.")
+    group.add_argument("--test-email", metavar="EMAIL", help="Send test email (alias for --test).")
 
     parser.add_argument("--force", action="store_true", help="Force operation even if issue already exists.")
     parser.add_argument("--admin-force", action="store_true", help="Skip in_progress guard in --ensure-today.")
@@ -771,6 +822,10 @@ def main() -> None:
         _run_mark_generation_started()
     elif args.mark_generation_failed:
         _run_mark_generation_failed(error=args.error_msg)
+    elif args.preflight:
+        _run_preflight()
+    elif args.test_email:
+        _run_test_email(args.test_email)
 
 
 if __name__ == "__main__":
