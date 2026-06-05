@@ -171,13 +171,13 @@
         `</div>` +
         `<div class="kpi-card" id="kpiVisitors">` +
           `<div class="kpi-val kpi-live" id="kpiVisitorsVal">—</div>` +
-          `<div class="kpi-label">Total Visitors</div>` +
-          `<div class="kpi-micro">Live site visits</div>` +
+          `<div class="kpi-label">Page Views</div>` +
+          `<div class="kpi-micro" id="kpiPageViewsVal" style="font-size:0.72rem;color:#64748b;">Loading…</div>` +
         `</div>` +
         `<div class="kpi-card" id="kpiSubscribers">` +
           `<div class="kpi-val kpi-live" id="kpiSubscribersVal">—</div>` +
           `<div class="kpi-label">Subscribers</div>` +
-          `<div class="kpi-micro">Morning brief readers</div>` +
+          `<div class="kpi-micro" id="kpiUniqueVisitorsVal" style="font-size:0.72rem;color:#64748b;">Morning brief readers</div>` +
         `</div>` +
       `</div>`;
 
@@ -455,11 +455,11 @@
         const pv = data.total_page_views ?? data.total_visits ?? 0;
         const uv = data.unique_visitors_today ?? 0;
         const sb = data.total_subscribers ?? 0;
-        const setEl = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val.toLocaleString(); };
-        setEl('kpiVisitorsVal',       pv);
-        setEl('kpiPageViewsVal',      pv);
-        setEl('kpiSubscribersVal',    sb);
-        setEl('kpiUniqueVisitorsVal', uv);
+        const setEl = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+        setEl('kpiVisitorsVal',    pv.toLocaleString());
+        setEl('kpiPageViewsVal',   pv.toLocaleString() + ' total · ' + uv.toLocaleString() + ' today');
+        setEl('kpiSubscribersVal', sb.toLocaleString());
+        setEl('kpiUniqueVisitorsVal', sb.toLocaleString() + ' morning brief readers');
         console.log('PeopleOS: analytics =', { total_page_views: pv, unique_visitors_today: uv, total_subscribers: sb });
       } else {
         ['kpiVisitorsVal', 'kpiSubscribersVal', 'kpiPageViewsVal', 'kpiUniqueVisitorsVal'].forEach(id => {
