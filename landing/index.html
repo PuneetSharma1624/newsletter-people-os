@@ -302,6 +302,124 @@
     </div>
   </section>
 
+  <!-- HOW IT WORKS — TABBED PANEL -->
+  <section class="hiw-section" aria-label="How it works">
+    <div class="hiw-inner">
+      <p class="hiw-eyebrow">System</p>
+      <h2 class="hiw-title">How It Works</h2>
+      <div class="hiw-tab-bar" role="tablist">
+        <button class="hiw-tab-btn hiw-tab-btn--active" data-tab="hiw-architecture" role="tab" aria-selected="true">Architecture</button>
+        <button class="hiw-tab-btn" data-tab="hiw-daily-flow" role="tab" aria-selected="false">Daily Flow</button>
+      </div>
+      <div class="hiw-tab-panel">
+        <div id="hiw-architecture" class="hiw-tab-pane">
+          <div class="flow-diagram">
+            <div class="flow-box flow-box--user">Every Day · 7:00 AM IST</div>
+            <div class="flow-down">↓</div>
+            <div class="flow-box flow-box--github">GitHub Actions<span class="flow-box-sub">generate-brief workflow</span></div>
+            <div class="flow-down">↓</div>
+            <div class="flow-box flow-box--github">Groq AI + Tavily<span class="flow-box-sub">Fetch &amp; Generate</span></div>
+            <div class="flow-down">↓</div>
+            <div class="flow-box flow-box--data">JSON committed to GitHub repo</div>
+            <div class="flow-down">↓</div>
+            <div class="flow-box flow-box--vercel">Vercel auto-deploy · ~30 seconds</div>
+            <div class="flow-down">↓</div>
+            <div class="flow-split-row">
+              <div class="flow-split-col">
+                <div class="flow-box flow-box--vercel">Static Site<span class="flow-box-sub">CDN</span></div>
+              </div>
+              <div class="flow-split-col">
+                <div class="flow-box flow-box--api">6 Serverless API Fns<span class="flow-box-sub">Python</span></div>
+                <div class="flow-down">↓</div>
+                <div class="flow-box flow-box--supabase">Supabase Database<span class="flow-box-sub">subscribers · analytics</span></div>
+              </div>
+            </div>
+            <div class="flow-down">↓</div>
+            <div class="flow-box flow-box--user">7:30 AM — GitHub Actions → Resend API → Subscriber Inboxes</div>
+          </div>
+        </div>
+        <div id="hiw-daily-flow" class="hiw-tab-pane" hidden>
+          <div class="hiw-steps">
+            <div class="hiw-step"><span class="hiw-step-time">7:00 AM</span><span class="hiw-step-text">AI scans the web for today's leadership &amp; people news</span></div>
+            <div class="hiw-step"><span class="hiw-step-time">7:00 AM</span><span class="hiw-step-text">Brief is generated and published to the site instantly</span></div>
+            <div class="hiw-step"><span class="hiw-step-time">7:15 AM</span><span class="hiw-step-text">Retry check runs to ensure nothing was missed</span></div>
+            <div class="hiw-step"><span class="hiw-step-time">7:30 AM</span><span class="hiw-step-text">Newsletter lands in every subscriber's inbox</span></div>
+            <div class="hiw-step"><span class="hiw-step-time">All day</span><span class="hiw-step-text">You read it in 5 minutes. We built it to save you hours.</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- BUILT DIFFERENT -->
+  <section class="bd-section" aria-label="Built different">
+    <div class="bd-inner">
+      <p class="bd-eyebrow">Builder Story</p>
+      <h2 class="bd-title">Built Different</h2>
+      <p class="bd-subtitle">7 days. 41 deployments. One brief, every morning.</p>
+
+      <div class="bd-stats-row">
+        <div class="bd-stat-card">
+          <span class="bd-stat-num">7</span>
+          <span class="bd-stat-label">Days</span>
+          <span class="bd-stat-sub">Build time</span>
+        </div>
+        <div class="bd-stat-card">
+          <span class="bd-stat-num">41</span>
+          <span class="bd-stat-label">Deploys</span>
+          <span class="bd-stat-sub">Total pushes</span>
+        </div>
+        <div class="bd-stat-card">
+          <span class="bd-stat-num">3</span>
+          <span class="bd-stat-label">AI Tools</span>
+          <span class="bd-stat-sub">Claude + Groq + Tavily</span>
+        </div>
+        <div class="bd-stat-card">
+          <span class="bd-stat-num">1</span>
+          <span class="bd-stat-label">Brief Daily</span>
+          <span class="bd-stat-sub">Every morning at 7 AM</span>
+        </div>
+      </div>
+
+      <div class="bd-powered-row">
+        <span class="bd-powered-label">Powered by</span>
+        <span class="bd-logo-pill"><img src="https://cdn.simpleicons.org/github/ffffff" alt="GitHub" loading="lazy" width="18" height="18">GitHub</span>
+        <span class="bd-logo-pill"><img src="https://cdn.simpleicons.org/githubactions/ffffff" alt="GitHub Actions" loading="lazy" width="18" height="18">GitHub Actions</span>
+        <span class="bd-logo-pill"><img src="https://cdn.simpleicons.org/vercel/ffffff" alt="Vercel" loading="lazy" width="18" height="18">Vercel</span>
+        <span class="bd-logo-pill"><img src="https://cdn.simpleicons.org/supabase/3ecf8e" alt="Supabase" loading="lazy" width="18" height="18">Supabase</span>
+        <span class="bd-logo-pill"><img src="https://cdn.simpleicons.org/python/ffffff" alt="Python" loading="lazy" width="18" height="18">Python</span>
+        <span class="bd-logo-pill"><img src="https://cdn.simpleicons.org/resend/ffffff" alt="Resend" loading="lazy" width="18" height="18">Resend</span>
+        <span class="bd-logo-pill bd-logo-pill--accent">Groq</span>
+        <span class="bd-logo-pill bd-logo-pill--accent">Tavily</span>
+        <span class="bd-logo-pill bd-logo-pill--purple">Claude</span>
+      </div>
+
+      <h3 class="bd-timeline-title">How It Actually Shipped</h3>
+      <div class="bd-timeline">
+        <div class="bd-entry"><div class="bd-entry-day">Day 1</div><div class="bd-entry-text">Had the idea. Stack chosen. Let's go.</div></div>
+        <div class="bd-entry"><div class="bd-entry-day">Day 2</div><div class="bd-entry-text">First version live. Nothing works properly. Ship anyway.</div></div>
+        <div class="bd-entry"><div class="bd-entry-day">Day 3</div><div class="bd-entry-text">Discovered serverless functions cannot write files. Moved everything to GitHub Actions.</div></div>
+        <div class="bd-entry"><div class="bd-entry-day">Day 4</div><div class="bd-entry-text">Routing wars with Vercel. 6 API functions survived.</div></div>
+        <div class="bd-entry"><div class="bd-entry-day">Day 5</div><div class="bd-entry-text">status.json was lying to the retry workflow. Fixed it.</div></div>
+        <div class="bd-entry"><div class="bd-entry-day">Day 6</div><div class="bd-entry-text">Smoke checks added. Workflows go green.</div></div>
+        <div class="bd-entry"><div class="bd-entry-day">Day 7</div><div class="bd-entry-text">Real content. Real subscribers. Real emails. Daily brief ships at 7 AM without touching a thing.</div></div>
+        <div class="bd-entry bd-entry--special"><div class="bd-entry-day">Always</div><div class="bd-entry-text">Never Quit.</div></div>
+      </div>
+
+      <div class="bd-video-wrap">
+        <div class="bd-video-responsive">
+          <iframe
+            src="https://www.youtube.com/embed/bDMwm_IUz5I?start=14&rel=0"
+            title="The energy that built this"
+            allow="fullscreen"
+            allowfullscreen
+          ></iframe>
+        </div>
+        <p class="bd-video-caption">The energy that built this. 🚀</p>
+      </div>
+    </div>
+  </section>
+
   <!-- Manually update deployment count/time spent until Vercel API integration is added later. -->
   <section class="builder-status" aria-label="Builder status">
     <div class="builder-status-inner">
@@ -344,5 +462,23 @@
 
   <script src="/dashboard.js"></script>
   <script src="/subscribe.js"></script>
+  <script>
+  (function(){
+    document.querySelectorAll('.hiw-tab-btn').forEach(function(btn){
+      btn.addEventListener('click',function(){
+        var target=this.dataset.tab;
+        document.querySelectorAll('.hiw-tab-btn').forEach(function(b){
+          b.classList.remove('hiw-tab-btn--active');
+          b.setAttribute('aria-selected','false');
+        });
+        document.querySelectorAll('.hiw-tab-pane').forEach(function(p){p.hidden=true;});
+        this.classList.add('hiw-tab-btn--active');
+        this.setAttribute('aria-selected','true');
+        var pane=document.getElementById(target);
+        if(pane)pane.hidden=false;
+      });
+    });
+  })();
+  </script>
 </body>
 </html>
