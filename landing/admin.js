@@ -68,6 +68,8 @@
   // ══════════════════════════════════════════════════════════════
   const token = sessionStorage.getItem('admin_token') || localStorage.getItem('admin_token');
   if (!token) { window.location.href = '/admin/'; return; }
+  const ADMIN_REFRESH_INTERVAL_MS = 30000;
+  let adminRefreshTimer = null;
 
   function authHeaders() {
     return { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` };
@@ -110,7 +112,11 @@
       const res = await fetch('/api/admin?action=stats', { headers: authHeaders() });
       if (res.status === 401) { logout(); return; }
       const data = await res.json();
-      if (!data.ok) return;
+      if (!data.ok) {
+        addLog('Admin stats failed: ' + (data.message || data.error || 'unknown'), 'err');
+        ['admKpiVisits', 'admKpiTodayVisits', 'admKpiSubs', 'admKpiNewToday'].forEach(id => setKpi(id, 'Error'));
+        return;
+      }
 
       setKpi('admKpiVisits',     data.total_visits  ?? '—');
       setKpi('admKpiTodayVisits',data.today_visits  ?? '—');
@@ -125,7 +131,9 @@
           : '';
         lastEl.textContent = email ? `${email.split('@')[0]}@… · ${when}` : '—';
       }
-    } catch (_) {}
+    } catch (e) {
+      addLog('Admin stats error: ' + e.message, 'err');
+    }
   }
 
   function setKpi(id, val) {
@@ -148,6 +156,10 @@
       const gs = data.generation_status || {};
       const latestComplete = gs.latest_complete_issue_date || data.latest_date || 'None';
       setStatEl('statLatest', latestComplete, latestComplete !== 'None' ? 'ok' : 'warn');
+      if (!data.today_exists && data.latest_info) {
+        const demoNote = data.latest_info.is_demo ? ' Latest available issue is demo fallback.' : '';
+        addLog(`Today's issue is missing. Latest available issue is ${data.latest_info.date}.${demoNote}`, data.latest_info.is_demo ? 'warn' : 'info');
+      }
 
       const genStatus = gs.generation_status || gs.status || 'not_started';
       const genCls = { complete:'ok', in_progress:'warn', running:'warn', failed:'fail',
@@ -420,6 +432,42 @@
   }
   window.checkProductionJson = checkProductionJson;
 
+  async function checkLatestJson() {
+    addLog('Checking latest available JSON…', 'info');
+    await logAction('check_latest_json', 'started');
+    try {
+      const datesRes = await fetch('/data/dates.json?t=' + Date.now(), { cache: 'no-store' });
+      if (!datesRes.ok) {
+        addLog(`✗ dates.json unavailable (HTTP ${datesRes.status})`, 'err');
+        await logAction('check_latest_json', 'error', { error: `dates HTTP ${datesRes.status}` });
+        return;
+      }
+      const datesData = await datesRes.json();
+      const latest = (datesData.dates || [])[0];
+      if (!latest) {
+        addLog('✗ No latest date found in dates.json.', 'err');
+        await logAction('check_latest_json', 'error', { error: 'empty dates.json' });
+        return;
+      }
+      const url = `/data/issues/${latest}.json`;
+      addLog(`Fetching: ${url}`, 'info');
+      const issueRes = await fetch(url + '?t=' + Date.now(), { cache: 'no-store' });
+      if (!issueRes.ok) {
+        addLog(`✗ Latest JSON not available (HTTP ${issueRes.status}): ${url}`, 'err');
+        await logAction('check_latest_json', 'error', { error: `HTTP ${issueRes.status}` });
+        return;
+      }
+      const issue = await issueRes.json();
+      const isDemo = issue._demo === true || /demo fallback/i.test(issue.title || issue.subject || '');
+      addLog(`✓ Latest JSON live: ${latest} sections=${issue.total_sections} items=${issue.total_dashboard_items}${isDemo ? ' | demo fallback' : ''}`, isDemo ? 'warn' : 'ok');
+      await logAction('check_latest_json', 'success', { response: { latest, sections: issue.total_sections, demo: isDemo } });
+    } catch (e) {
+      addLog('Latest JSON check error: ' + e.message, 'err');
+      await logAction('check_latest_json', 'error', { error: e.message });
+    }
+  }
+  window.checkLatestJson = checkLatestJson;
+
   // ─── REFRESH PUBLIC STATS ────────────────────────────────────
   async function refreshPublicStats() {
     addLog('Refreshing public stats…', 'info');
@@ -449,7 +497,7 @@
       const data = await res.json();
       if (data.ok) {
         addLog(`✓ ${data.message}`, 'ok');
-        addLog('GitHub Actions workflow triggered. Check Actions tab for progress.', 'info');
+        addLog(data.note || 'Workflow dispatched. Check GitHub Actions run result.', 'info');
       } else {
         addLog(`✗ ${data.message}`, 'err');
         if (data.fallback) addLog(`Manual: ${data.fallback}`, 'warn');
@@ -472,6 +520,7 @@
       });
       const data = await res.json();
       addLog(data.ok ? `✓ ${data.message}` : `✗ ${data.message}`, data.ok ? 'ok' : 'err');
+      if (data.note) addLog(data.note, 'info');
     } catch (e) {
       addLog('Test email error: ' + e.message, 'err');
     }
@@ -480,12 +529,14 @@
   async function refreshIndex() {
     addLog('Refreshing archive index…', 'info');
     try {
-      await fetch('/api/admin?action=trigger', {
+      const res = await fetch('/api/admin?action=trigger', {
         method: 'POST',
         headers: authHeaders(),
-        body: JSON.stringify({ mode: 'generate_today' }),
+        body: JSON.stringify({ mode: 'refresh_index' }),
       });
-      addLog('Index refresh triggered.', 'info');
+      const data = await res.json().catch(() => ({}));
+      addLog(data.ok ? `✓ ${data.message}` : `✗ ${data.message || 'Index refresh trigger failed'}`, data.ok ? 'ok' : 'err');
+      if (data.note) addLog(data.note, 'info');
     } catch (e) {
       addLog('Error: ' + e.message, 'err');
     }
@@ -603,11 +654,27 @@
   window.applySubscriberFilter = applySubscriberFilter;
   window.loadSubscribers     = loadSubscribers;
 
-  // ─── INIT ───────────────────────────────────────────────────
-  document.addEventListener('DOMContentLoaded', () => {
+  function refreshAdminPanel() {
     loadAdminStats();
     loadNotifications();
     loadStatus();
+    const el = document.getElementById('adminLastRefreshed');
+    if (el) el.textContent = 'Last refreshed at ' + new Date().toLocaleTimeString();
+  }
+
+  function startAdminAutoRefresh() {
+    if (adminRefreshTimer) return;
+    adminRefreshTimer = window.setInterval(refreshAdminPanel, ADMIN_REFRESH_INTERVAL_MS);
+  }
+
+  window.addEventListener('beforeunload', () => {
+    if (adminRefreshTimer) window.clearInterval(adminRefreshTimer);
+  });
+
+  // ─── INIT ───────────────────────────────────────────────────
+  document.addEventListener('DOMContentLoaded', () => {
+    refreshAdminPanel();
+    startAdminAutoRefresh();
     loadActionLogs();
   });
   window.loadActionLogs = loadActionLogs;

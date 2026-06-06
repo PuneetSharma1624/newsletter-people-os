@@ -30,6 +30,7 @@ def _load_stats(sb_url: str, sb_key: str) -> dict:
     total_subscribers = rest_count(sb_url, sb_key, "subscribers", "status=eq.active")
 
     start, end = _today_ist_utc_range()
+    new_today = rest_count(sb_url, sb_key, "subscribers", f"created_at=gte.{start}&created_at=lt.{end}")
     rows = rest_get(
         sb_url,
         sb_key,
@@ -44,6 +45,7 @@ def _load_stats(sb_url: str, sb_key: str) -> dict:
         "total_visits": total_page_views,
         "unique_visitors_today": unique_visitors_today,
         "total_subscribers": total_subscribers,
+        "new_today": new_today,
     }
 
 

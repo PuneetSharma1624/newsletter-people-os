@@ -4,6 +4,11 @@ on:
   schedule:
     - cron: "45 1 * * *"   # 01:45 UTC = 07:15 IST
   workflow_dispatch:
+    inputs:
+      mode:
+        description: "smoke_check | check_retry"
+        required: false
+        default: "check_retry"
 
 concurrency:
   group: peopleos-brief-daily-${{ github.ref }}
@@ -66,7 +71,22 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
+      - name: Smoke check
+        if: github.event_name == 'workflow_dispatch' && inputs.mode == 'smoke_check'
+        run: |
+          python - <<'PY'
+          import json, os, pathlib
+          print("Check/retry smoke check: repo checkout OK")
+          for path in ("newsletter/main.py", "landing/data/status.json"):
+              print(f"{path}: {'present' if pathlib.Path(path).exists() else 'missing'}")
+          for key in ("GROQ_API_KEY_1", "TAVILY_API_KEY"):
+              print(f"{key}: {'present' if os.getenv(key) else 'missing'}")
+          json.loads(pathlib.Path("landing/data/status.json").read_text())
+          print("Smoke check complete")
+          PY
+
       - name: Validate required environment
+        if: github.event_name != 'workflow_dispatch' || inputs.mode != 'smoke_check'
         run: |
           python -c "
           import os, sys
@@ -80,23 +100,25 @@ jobs:
           "
 
       - name: "Log: status before check"
+        if: github.event_name != 'workflow_dispatch' || inputs.mode != 'smoke_check'
         run: |
           echo "--- status.json ---"
           cat landing/data/status.json 2>/dev/null || echo "(not found)"
 
       - name: "Check today's brief completeness"
+        if: github.event_name != 'workflow_dispatch' || inputs.mode != 'smoke_check'
         id: check
         run: |
           python newsletter/main.py --check-today && echo "BRIEF_COMPLETE=true" >> $GITHUB_OUTPUT || echo "BRIEF_COMPLETE=false" >> $GITHUB_OUTPUT
         continue-on-error: true
 
       - name: "Skip if complete"
-        if: steps.check.outputs.BRIEF_COMPLETE == 'true'
+        if: (github.event_name != 'workflow_dispatch' || inputs.mode != 'smoke_check') && steps.check.outputs.BRIEF_COMPLETE == 'true'
         run: |
           echo "Today's brief is complete. No retry needed."
 
       - name: "Retry generation if incomplete"
-        if: steps.check.outputs.BRIEF_COMPLETE != 'true'
+        if: (github.event_name != 'workflow_dispatch' || inputs.mode != 'smoke_check') && steps.check.outputs.BRIEF_COMPLETE != 'true'
         run: |
           echo "Today's brief is missing or incomplete. Running retry..."
           python newsletter/main.py --ensure-today
@@ -104,11 +126,11 @@ jobs:
           python newsletter/main.py --check-today
 
       - name: Audit source links (on retry only)
-        if: steps.check.outputs.BRIEF_COMPLETE != 'true'
+        if: (github.event_name != 'workflow_dispatch' || inputs.mode != 'smoke_check') && steps.check.outputs.BRIEF_COMPLETE != 'true'
         run: python newsletter/main.py --audit-links || echo "Link audit warnings — continuing"
 
       - name: "Commit if files changed (retry path)"
-        if: steps.check.outputs.BRIEF_COMPLETE != 'true'
+        if: (github.event_name != 'workflow_dispatch' || inputs.mode != 'smoke_check') && steps.check.outputs.BRIEF_COMPLETE != 'true'
         run: |
           TODAY=$(TZ='Asia/Kolkata' date '+%Y-%m-%d')
           git config user.name "peopleos-brief-bot"
@@ -122,6 +144,7 @@ jobs:
           fi
 
       - name: "Log: final status"
+        if: github.event_name != 'workflow_dispatch' || inputs.mode != 'smoke_check'
         run: |
           echo "--- status.json after ---"
           cat landing/data/status.json 2>/dev/null || echo "(not found)"

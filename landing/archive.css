@@ -50,6 +50,16 @@
   margin-bottom:4px;
 }
 
+.archive-demo-pill{
+  display:inline-flex;align-items:center;
+  margin-left:8px;padding:2px 7px;border-radius:999px;
+  border:1px solid rgba(245,158,11,0.28);
+  background:rgba(245,158,11,0.1);
+  color:#fbbf24;font-size:0.62rem;font-weight:700;
+  text-transform:uppercase;letter-spacing:.06em;
+  vertical-align:middle;
+}
+
 .archive-issue-preheader{
   font-size:0.78rem;color:var(--text-muted);
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;

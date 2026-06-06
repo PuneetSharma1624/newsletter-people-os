@@ -66,7 +66,7 @@ def _validate_auth(headers):
     return auth.startswith('Bearer ') and auth[7:].strip() == expected
 
 
-def _trigger_github(mode, force=False):
+def _trigger_github(mode, force=False, test_email=''):
     owner = os.getenv('GITHUB_OWNER', '')
     repo  = os.getenv('GITHUB_REPO', '')
     pat   = os.getenv('GITHUB_PAT_FOR_WORKFLOW_DISPATCH', '')
@@ -75,15 +75,33 @@ def _trigger_github(mode, force=False):
     if not all([owner, repo, pat]):
         return False, 'GitHub dispatch not configured (missing GITHUB_OWNER/REPO/PAT)'
 
-    if mode in ('check_today', 'ensure_today', 'check_production'):
+    generation_modes = {
+        'smoke_check', 'ensure_today', 'generate_today', 'generate_today_force',
+        'force_generate_today', 'refresh_index', 'send_test_email',
+        'test_email', 'backfill_initial',
+    }
+
+    if mode in ('check_today', 'check_retry', 'check_production'):
         workflow = 'check-and-retry-0715.yml'
     elif mode == 'send_live_today':
         workflow = 'send-newsletter-0730.yml'
+    elif mode in generation_modes:
+        workflow = 'generate-brief-0700.yml'
     else:
         workflow = os.getenv('GITHUB_WORKFLOW_FILE', 'generate-brief-0700.yml')
 
     if workflow == 'generate-brief-0700.yml':
-        inputs = {'force': 'true' if force else 'false'}
+        normalized_mode = {
+            'generate_today': 'generate_today_force' if force else 'ensure_today',
+            'force_generate_today': 'generate_today_force',
+            'test_email': 'send_test_email',
+        }.get(mode, mode or 'ensure_today')
+        inputs = {
+            'mode': normalized_mode,
+            'force': 'true' if force or normalized_mode == 'generate_today_force' else 'false',
+        }
+        if normalized_mode == 'send_test_email' and test_email:
+            inputs['test_email'] = test_email
     elif workflow == 'send-newsletter-0730.yml':
         inputs = {'send_live': 'true' if mode == 'send_live_today' else 'false'}
     else:
@@ -138,10 +156,23 @@ def _action_status():
                     'total_sections': issue.get('total_sections', 0),
                     'total_dashboard_items': issue.get('total_dashboard_items', 0),
                     'subject': issue.get('subject', ''),
+                    'is_demo': bool(issue.get('_demo')) or 'demo fallback' in str(issue.get('title', '')).lower(),
+                }
+        latest_info = {}
+        if dates:
+            latest_issue = load_issue(dates[0])
+            if latest_issue:
+                latest_info = {
+                    'date': dates[0],
+                    'title': latest_issue.get('title') or latest_issue.get('subject') or '',
+                    'total_sections': latest_issue.get('total_sections', 0),
+                    'total_dashboard_items': latest_issue.get('total_dashboard_items', 0),
+                    'is_demo': bool(latest_issue.get('_demo')) or 'demo fallback' in str(latest_issue.get('title', '')).lower(),
                 }
         return {
             'ok': True, 'today': today, 'today_exists': today_exists,
             'today_info': today_info, 'latest_date': dates[0] if dates else None,
+            'latest_info': latest_info,
             'total_archived': len(dates), 'generation_status': status,
             'github_configured': bool(os.getenv('GITHUB_PAT_FOR_WORKFLOW_DISPATCH')),
         }
@@ -155,12 +186,16 @@ def _action_admin_stats():
     if not sb_url or not sb_key:
         return {'ok': False, 'message': 'Supabase not configured'}
     try:
-        today = datetime.date.today().isoformat()
-        today_dt = f"{today}T00:00:00"
-        total_visits      = _sb_count(sb_url, sb_key, 'site_analytics')
-        today_visits      = _sb_count(sb_url, sb_key, 'site_analytics', f'created_at=gte.{today_dt}')
+        ist = datetime.timezone(datetime.timedelta(hours=5, minutes=30))
+        today = datetime.datetime.now(ist).date()
+        start_ist = datetime.datetime.combine(today, datetime.time.min, tzinfo=ist)
+        end_ist = start_ist + datetime.timedelta(days=1)
+        start_utc = start_ist.astimezone(datetime.timezone.utc).isoformat().replace('+00:00', 'Z')
+        end_utc = end_ist.astimezone(datetime.timezone.utc).isoformat().replace('+00:00', 'Z')
+        total_visits      = _sb_count(sb_url, sb_key, 'site_analytics', 'event_type=eq.page_view')
+        today_visits      = _sb_count(sb_url, sb_key, 'site_analytics', f'event_type=eq.page_view&created_at=gte.{start_utc}&created_at=lt.{end_utc}')
         total_subscribers = _sb_count(sb_url, sb_key, 'subscribers', 'status=eq.active')
-        new_today         = _sb_count(sb_url, sb_key, 'subscribers', f'created_at=gte.{today_dt}')
+        new_today         = _sb_count(sb_url, sb_key, 'subscribers', f'created_at=gte.{start_utc}&created_at=lt.{end_utc}')
         latest = _sb_get(sb_url, sb_key, 'subscribers',
                          'select=email,created_at&order=created_at.desc&limit=1')
         return {
@@ -343,9 +378,10 @@ class handler(BaseHTTPRequestHandler):
         if action == 'trigger':
             mode  = str(body.get('mode', 'ensure_today'))
             force = bool(body.get('force', False))
-            ok, msg = _trigger_github(mode, force)
+            test_email = str(body.get('test_email', '') or '')[:200]
+            ok, msg = _trigger_github(mode, force, test_email=test_email)
             if ok:
-                self._json({'ok': True, 'message': msg, 'mode': mode})
+                self._json({'ok': True, 'message': msg, 'mode': mode, 'note': 'HTTP 204 means dispatch accepted. Check GitHub Actions for execution result.'})
             else:
                 self._json({
                     'ok': False, 'message': msg,

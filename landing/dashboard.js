@@ -156,7 +156,7 @@
     if (e) { e.hidden=true;  e.style.display='none'; }
     if (c) { c.hidden=false; c.style.display=''; }
 
-    const isDemo = issue._demo===true && (issue.total_dashboard_items||0) < 60;
+    const isDemo = issue._demo===true || /demo fallback/i.test(issue.title || issue.subject || '');
     const banner = document.getElementById('demoBanner');
     if (banner) { banner.hidden=!isDemo; banner.style.display=!isDemo?'none':''; }
 

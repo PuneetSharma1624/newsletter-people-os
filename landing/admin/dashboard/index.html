@@ -246,7 +246,10 @@
         <h1 class="adm-title">Admin Dashboard</h1>
         <p class="adm-sub">PeopleOS Brief content generation &amp; subscriber control.</p>
       </div>
-      <button onclick="loadStatus();loadAdminStats();loadNotifications();" style="background:transparent;border:1px solid var(--border-subtle);color:var(--text-dim);cursor:pointer;font-family:var(--font);font-size:0.75rem;font-weight:600;padding:7px 14px;border-radius:var(--radius);transition:all .15s;" onmouseover="this.style.color='var(--white)'" onmouseout="this.style.color='var(--text-dim)'">↻ Refresh All</button>
+      <div style="display:flex;align-items:flex-end;gap:8px;flex-direction:column;">
+        <button onclick="loadStatus();loadAdminStats();loadNotifications();" style="background:transparent;border:1px solid var(--border-subtle);color:var(--text-dim);cursor:pointer;font-family:var(--font);font-size:0.75rem;font-weight:600;padding:7px 14px;border-radius:var(--radius);transition:all .15s;" onmouseover="this.style.color='var(--white)'" onmouseout="this.style.color='var(--text-dim)'">↻ Refresh All</button>
+        <span id="adminLastRefreshed" style="font-size:0.68rem;color:var(--text-dim);">Admin stats refresh every 30 seconds.</span>
+      </div>
     </div>
   </div>
 
@@ -255,13 +258,13 @@
   <div class="adm-kpi-strip">
     <div class="adm-kpi-card">
       <div class="adm-kpi-val" id="admKpiVisits">—</div>
-      <div class="adm-kpi-label">Total Visitors</div>
-      <div class="adm-kpi-sub">All time visits</div>
+      <div class="adm-kpi-label">Total Page Views</div>
+      <div class="adm-kpi-sub">All time page loads</div>
     </div>
     <div class="adm-kpi-card">
       <div class="adm-kpi-val" id="admKpiTodayVisits">—</div>
-      <div class="adm-kpi-label">Today's Visits</div>
-      <div class="adm-kpi-sub">Since midnight</div>
+      <div class="adm-kpi-label">Page Views Today</div>
+      <div class="adm-kpi-sub">Since midnight IST</div>
     </div>
     <div class="adm-kpi-card">
       <div class="adm-kpi-val" id="admKpiSubs">—</div>
@@ -313,6 +316,7 @@
     <div class="btn-grid" style="margin-bottom:12px;">
       <button class="action-btn" onclick="checkTodayIssue()"><span class="btn-icon">🔎</span>Check Today's Issue</button>
       <button class="action-btn" onclick="checkProductionJson()"><span class="btn-icon">🌐</span>Check Production JSON</button>
+      <button class="action-btn" onclick="checkLatestJson()"><span class="btn-icon">🗂</span>Check Latest JSON</button>
       <button class="action-btn" onclick="refreshPublicStats()"><span class="btn-icon">📊</span>Refresh Public Stats</button>
       <button class="action-btn" onclick="testSubscribeAdminEmail()"><span class="btn-icon">🧪</span>Test Subscribe heyypuneet@gmail.com</button>
     </div>

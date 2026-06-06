@@ -9,8 +9,10 @@ import os
 import sys
 import urllib.error
 import urllib.request
+import datetime
 
 BASE_URL = os.getenv("BASE_URL", "").rstrip("/")
+IST = datetime.timezone(datetime.timedelta(hours=5, minutes=30))
 
 
 def _print(ok, label, detail=""):
@@ -79,9 +81,19 @@ def main():
             _, issue = result
             sections = len(issue.get("sections", []))
             items = issue.get("total_dashboard_items", 0)
-            all_ok &= _print(sections == 12 and items == 72, f"latest issue reachable: {latest}", f"sections={sections} items={items}")
+            is_demo = bool(issue.get("_demo")) or "demo fallback" in str(issue.get("title", "")).lower()
+            all_ok &= _print(sections == 12 and items == 72, f"latest issue reachable: {latest}", f"sections={sections} items={items} demo_fallback={is_demo}")
         else:
             all_ok = False
+
+    today = datetime.datetime.now(IST).date().isoformat()
+    result = _safe_call(lambda: _get(f"/data/issues/{today}.json"), f"today issue reachable: {today}")
+    if result:
+        _, issue = result
+        is_demo = bool(issue.get("_demo")) or "demo fallback" in str(issue.get("title", "")).lower()
+        all_ok &= _print(bool(issue.get("sections")), f"today issue reachable: {today}", f"demo_fallback={is_demo}")
+    else:
+        all_ok = False
 
     result = _safe_call(lambda: _get("/api/health"), "/api/health reachable")
     if result:

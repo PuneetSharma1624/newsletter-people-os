@@ -5,10 +5,18 @@ on:
     - cron: "30 1 * * *"   # 01:30 UTC = 07:00 IST
   workflow_dispatch:
     inputs:
+      mode:
+        description: "smoke_check | ensure_today | generate_today_force | refresh_index | send_test_email | backfill_initial"
+        required: false
+        default: "ensure_today"
       force:
         description: "Force regenerate today's issue (true/false)"
         required: false
         default: "false"
+      test_email:
+        description: "Test email address for send_test_email mode"
+        required: false
+        default: ""
 
 concurrency:
   group: peopleos-brief-daily-${{ github.ref }}
@@ -74,7 +82,23 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
+      - name: Smoke check
+        if: github.event_name == 'workflow_dispatch' && inputs.mode == 'smoke_check'
+        run: |
+          python - <<'PY'
+          import json, os, pathlib
+          print("Smoke check: repo checkout OK")
+          for path in ("newsletter/main.py", "landing/data/status.json", "landing/data/dates.json", "landing/data/archive.json"):
+              print(f"{path}: {'present' if pathlib.Path(path).exists() else 'missing'}")
+          for key in ("GROQ_API_KEY_1", "TAVILY_API_KEY", "BASE_URL"):
+              print(f"{key}: {'present' if os.getenv(key) else 'missing'}")
+          json.loads(pathlib.Path("landing/data/status.json").read_text())
+          import newsletter.main  # noqa: F401
+          print("Smoke check complete")
+          PY
+
       - name: Validate required environment
+        if: github.event_name != 'workflow_dispatch' || inputs.mode != 'smoke_check'
         run: |
           python -c "
           import os, sys
@@ -88,6 +112,7 @@ jobs:
           "
 
       - name: "Log: status before generation"
+        if: github.event_name != 'workflow_dispatch' || inputs.mode != 'smoke_check'
         run: |
           echo "--- status.json before ---"
           cat landing/data/status.json 2>/dev/null || echo "(not found)"
@@ -95,22 +120,37 @@ jobs:
           python -c "import json; d=json.load(open('landing/data/dates.json')); print(d['dates'][0] if d.get('dates') else 'empty')" 2>/dev/null || echo "(not found)"
 
       - name: Mark generation started
+        if: github.event_name == 'schedule' || inputs.mode == 'ensure_today' || inputs.mode == 'generate_today_force' || inputs.force == 'true'
         run: python newsletter/main.py --mark-generation-started
 
       - name: "Generate today's issue (scheduled — idempotent)"
-        if: github.event_name == 'schedule' || inputs.force != 'true'
+        if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.mode == 'ensure_today' && inputs.force != 'true')
         run: python newsletter/main.py --ensure-today
 
       - name: "Generate today's issue (force)"
-        if: github.event_name == 'workflow_dispatch' && inputs.force == 'true'
+        if: github.event_name == 'workflow_dispatch' && (inputs.mode == 'generate_today_force' || inputs.force == 'true')
         run: |
           python newsletter/main.py --generate-today --force
           python newsletter/main.py --check-today
 
+      - name: Refresh archive index
+        if: github.event_name == 'workflow_dispatch' && inputs.mode == 'refresh_index'
+        run: python newsletter/main.py --refresh-index
+
+      - name: Backfill initial archive
+        if: github.event_name == 'workflow_dispatch' && inputs.mode == 'backfill_initial'
+        run: python newsletter/main.py --backfill-initial
+
+      - name: Send test email
+        if: github.event_name == 'workflow_dispatch' && inputs.mode == 'send_test_email' && inputs.test_email != ''
+        run: python newsletter/main.py --test "${{ inputs.test_email }}"
+
       - name: Audit source links
+        if: github.event_name == 'schedule' || inputs.mode == 'ensure_today' || inputs.mode == 'generate_today_force' || inputs.force == 'true'
         run: python newsletter/main.py --audit-links || echo "Link audit warnings — continuing"
 
       - name: "Log: status after generation"
+        if: github.event_name != 'workflow_dispatch' || inputs.mode != 'smoke_check'
         run: |
           echo "--- status.json after ---"
           cat landing/data/status.json 2>/dev/null || echo "(not found)"
@@ -118,6 +158,7 @@ jobs:
           python newsletter/main.py --check-today || true
 
       - name: Commit generated files
+        if: github.event_name == 'schedule' || inputs.mode == 'ensure_today' || inputs.mode == 'generate_today_force' || inputs.mode == 'refresh_index' || inputs.mode == 'backfill_initial' || inputs.force == 'true'
         run: |
           TODAY=$(TZ='Asia/Kolkata' date '+%Y-%m-%d')
           git config user.name "peopleos-brief-bot"
@@ -131,6 +172,7 @@ jobs:
           fi
 
       - name: Push to main
+        if: github.event_name == 'schedule' || inputs.mode == 'ensure_today' || inputs.mode == 'generate_today_force' || inputs.mode == 'refresh_index' || inputs.mode == 'backfill_initial' || inputs.force == 'true'
         run: |
           git push || echo "Nothing to push"
           echo "Push result: $?"

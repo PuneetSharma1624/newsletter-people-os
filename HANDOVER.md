@@ -1,5 +1,45 @@
 # PeopleOS Brief — Project Handover
 
+## Production Recovery Plan - GitHub Refresh, Stats, Archive, Admin QA
+
+### Log Findings
+- Today JSON missing: production `/data/issues/YYYY-MM-DD.json` returned 404.
+- Some workflow dispatches returned 204, which only proves GitHub accepted the dispatch.
+- Some workflow dispatches failed with 422 because the target workflow lacked the expected `workflow_dispatch` inputs or admin mapped to the wrong workflow mode.
+- Subscribe returned `already_subscribed`, suggesting the subscribe write/reactivation path is working.
+- Stats returned unknown values in admin logs, so stats API, Supabase schema/env, or frontend error mapping still needs production proof.
+- Demo refresh cannot persist files on Vercel, which is expected.
+- Archive rendered cards but loader state needed robust cleanup.
+
+### Fix Order
+1. GitHub Actions `workflow_dispatch` and real generation.
+2. Admin trigger mapping.
+3. Production JSON/status checks.
+4. Archive loader.
+5. Subscriber count from Supabase.
+6. Page-view analytics from Supabase.
+7. Admin 30-second refresh.
+
+### Cron Schedule
+- 7:00 AM IST: Generate daily issue.
+- 7:15 AM IST: Check/retry.
+- 7:30 AM IST: Send newsletter only if production JSON is live.
+
+### Stats Policy
+- Public stats update on page load and after subscription.
+- Admin stats refresh every 30 seconds.
+- Public 30-second polling is intentionally avoided for MVP efficiency.
+- Total page views and unique visitors today are separate metrics.
+
+### Platform Decision
+Vercel remains acceptable for static dashboard and lightweight APIs.
+GitHub Actions remains the generation engine.
+Supabase remains the system of record for subscribers and analytics.
+Do not move generation into Vercel serverless.
+
+### Cron Truth
+Manual `workflow_dispatch` proves workflow logic. The actual scheduled cron is proven only when GitHub runs the scheduled workflow at the scheduled time. Optional temporary cron smoke workflow can be added only with explicit user approval.
+
 ## QA / Production Readiness Session - Dashboard, Stats, Subscribe, Cron
 
 ### Problems Found
