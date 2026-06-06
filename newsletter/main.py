@@ -531,6 +531,13 @@ def _run_ensure_today(admin_force: bool = False) -> None:
         set_status("skipped_already_complete", current_date=date)
         sys.exit(0)
 
+    # Files valid but status.json is the only error — fix status, skip generation
+    non_status_errors = [e for e in result["errors"] if "status.json" not in e]
+    if not non_status_errors and result["exists"] and result["valid_json"] and result["sections"] >= 12:
+        print(f"Today's issue files are complete. Correcting status.json and skipping generation.")
+        set_status("complete", current_date=date)
+        sys.exit(0)
+
     # Check if in_progress and fresh (< 30 min) — don't double-generate
     s = get_status()
     if not admin_force and s.get("generation_status") in ("in_progress", "running"):
