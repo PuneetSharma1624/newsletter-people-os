@@ -157,6 +157,22 @@ body{
 }
 .nav-cta:hover{background:var(--accent-hover);transform:translateY(-1px);}
 
+.nav-cta--admin{
+  background:rgba(56,189,248,0.1);
+  color:#38bdf8;
+  border:1px solid rgba(56,189,248,0.28);
+  font-size:0.78rem;font-weight:600;letter-spacing:-0.01em;
+  padding:6px 14px;border-radius:var(--radius-sm);
+  text-decoration:none;margin-left:4px;
+  transition:background .15s,border-color .15s,color .15s;
+}
+.nav-cta--admin:hover{
+  background:rgba(56,189,248,0.18);
+  border-color:rgba(56,189,248,0.5);
+  color:#7dd3fc;
+  transform:translateY(-1px);
+}
+
 /* ══════════════════════════════════════
    HERO
 ══════════════════════════════════════ */
