@@ -1,6 +1,16 @@
 {
   "issues": [
     {
+      "issue_date": "2026-06-06",
+      "title": "PeopleOS Brief — 2026-06-06",
+      "subject": "PeopleOS Brief — June 06, 2026 Intelligence",
+      "preheader": "12-section daily executive intelligence across markets, AI, HR, and economics.",
+      "executive_summary": "The global stock market experienced a decline, with the US stock market ending sharply lower due to rate hike fears and the Nifty and Sensex also falling with mixed sector performance in India. Meanwh",
+      "section_count": 12,
+      "item_count": 72,
+      "sent_at": null
+    },
+    {
       "issue_date": "2026-06-05",
       "title": "PeopleOS Brief - 2026-06-05 (Demo Fallback)",
       "subject": "PeopleOS Brief - June 05, 2026 Demo Fallback Intelligence",
