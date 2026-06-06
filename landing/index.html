@@ -13,6 +13,11 @@
 </head>
 <body>
 
+  <div class="beta-banner" role="status">
+    <span class="beta-dot" aria-hidden="true"></span>
+    <span><strong>Beta Version</strong> &mdash; We are learning to build beautiful UI/UX. You&rsquo;ll see PeopleOS Brief keep getting updated in a stylish way.</span>
+  </div>
+
   <!-- NAV -->
   <nav class="nav">
     <a href="/" class="nav-brand">PeopleOS Brief</a>
@@ -117,6 +122,7 @@
       <p class="subscribe-eyebrow">Daily Digest</p>
       <h2 class="subscribe-title">Get the executive cut in your inbox.</h2>
       <p class="subscribe-sub">Top 2 signals from each section. 24 updates. One clean morning brief. Free. 7:00 AM IST.</p>
+      <p class="stats-frequency-note">Daily brief: 7:00 AM IST. Retry check: 7:15 AM IST. Newsletter: 7:30 AM IST. Page views update on refresh. Subscriber count updates on page load and after successful subscription.</p>
       <p id="readerCountLine" class="subscribe-reader-count">Join readers getting the executive cut every morning.</p>
       <form class="subscribe-form" id="subscribeForm" novalidate>
         <div class="input-row" style="max-width:460px;margin:0 auto;">
@@ -129,6 +135,31 @@
         <div id="formMessage" class="form-message" aria-live="polite" style="text-align:center;"></div>
       </form>
       <p class="subscribe-privacy">No spam. No noise. Unsubscribe anytime.</p>
+    </div>
+  </section>
+
+  <!-- Manually update deployment count/time spent until Vercel API integration is added later. -->
+  <section class="builder-status" aria-label="Builder status">
+    <div class="builder-status-inner">
+      <div class="builder-status-main">
+        <p class="builder-eyebrow">Builder Status</p>
+        <h2>Never Quit.</h2>
+        <p>Current challenge: making daily generation, live subscriber count, page-view analytics, and GitHub Actions cron reliability production reliable.</p>
+      </div>
+      <div class="builder-status-grid">
+        <div>
+          <span>Total deployments tracked</span>
+          <strong>4 production-readiness deploys</strong>
+        </div>
+        <div>
+          <span>Time spent building</span>
+          <strong>May 30-June 6, 2026 build sprint</strong>
+        </div>
+        <div>
+          <span>Current challenges</span>
+          <strong>Daily generation verification, live stats, cron reliability</strong>
+        </div>
+      </div>
     </div>
   </section>
 

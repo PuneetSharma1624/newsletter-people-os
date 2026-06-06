@@ -1,5 +1,44 @@
 # PeopleOS Brief — Project Handover
 
+## QA / Production Readiness Session - Dashboard, Stats, Subscribe, Cron
+
+### Problems Found
+- Demo fallback showing instead of real generated daily brief.
+- Page views and subscribers showing `—`.
+- Cron schedule exists but end-to-end workflow not proven.
+- Subscribe must be verified against real Supabase.
+- Visitor count must be verified against real Supabase.
+- Site needs beta transparency and builder status.
+
+### QA Mindset
+This project must be treated like a production product: frontend, backend, database, automation, deployment, and user-facing copy must all be verified stage by stage.
+
+### Cron Schedule
+- 7:00 AM IST: Generate brief
+- 7:15 AM IST: Check/retry
+- 7:30 AM IST: Send newsletter only if production JSON is live
+
+### Stats Frequency
+- Page views update on every refresh/page load.
+- Subscriber count updates on page load and after successful subscription.
+- Unique visitors today is deduped and separate from total page views.
+
+### Site Beta Copy
+Beta Version — We are learning to build beautiful UI/UX. You’ll see PeopleOS Brief keep getting updated in a stylish way.
+
+### Builder Reminder
+Never Quit.
+
+### Builder Status Values
+- Total deployments tracked: 4 production-readiness deploys
+- Time spent building: May 30-June 6, 2026 build sprint
+
+### Current Challenges
+- Real daily generation verification
+- Live subscriber count verification
+- Page-view analytics verification
+- GitHub Actions cron reliability
+
 ## Functional Fix - 2026-06-05 - Subscribe, Stats, Visitor Count, and Missing June Data
 
 ### Issues Fixed
