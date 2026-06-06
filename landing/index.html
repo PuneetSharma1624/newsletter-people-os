@@ -13,6 +13,15 @@
 </head>
 <body>
 
+  <!-- STATS BAR -->
+  <div class="builder-stats-bar" role="complementary" aria-label="Build stats">
+    ⚡ Built in <span class="stat-num">7 days</span>
+    <span class="stat-sep">·</span>
+    <span class="stat-num">41</span> deployments
+    <span class="stat-sep">·</span>
+    May 30 – June 6, 2026
+  </div>
+
   <div class="beta-banner" role="status">
     <span class="beta-dot" aria-hidden="true"></span>
     <span><strong>Beta Version</strong> &mdash; We are learning to build beautiful UI/UX. You&rsquo;ll see PeopleOS Brief keep getting updated in a stylish way.</span>
@@ -116,6 +125,161 @@
     </div>
   </main>
 
+  <!-- HOW IT WORKS -->
+  <section class="story-section" aria-label="How it works">
+    <div class="story-section-inner">
+      <p class="story-section-eyebrow">Architecture</p>
+      <h2 class="story-section-title">How It Works</h2>
+      <div class="flow-diagram">
+        <div class="flow-box flow-box--user">Every Morning · 7:00 AM IST</div>
+        <div class="flow-down">↓</div>
+        <div class="flow-box flow-box--github">GitHub Actions</div>
+        <div class="flow-down">↓</div>
+        <div class="flow-box flow-box--github">Groq API + Tavily API<span class="flow-box-sub">AI generates news brief</span></div>
+        <div class="flow-down">↓</div>
+        <div class="flow-box flow-box--data">landing/data/issues/YYYY-MM-DD.json</div>
+        <div class="flow-down">↓</div>
+        <div class="flow-box flow-box--github">Commit + Push to main</div>
+        <div class="flow-down">↓</div>
+        <div class="flow-box flow-box--vercel">Vercel Auto-redeploys · ~30s</div>
+        <div class="flow-down">↓</div>
+        <div class="flow-split-row">
+          <div class="flow-split-col">
+            <div class="flow-box flow-box--vercel">Static Site<span class="flow-box-sub">CDN · instant</span></div>
+            <div class="flow-down">↓</div>
+            <div class="flow-box flow-box--user">User reads brief</div>
+            <div class="flow-down">↓</div>
+            <div class="flow-box flow-box--github" style="font-family:monospace;font-size:0.73rem;">POST /api/visit</div>
+            <div class="flow-down">↓</div>
+            <div class="flow-box flow-box--user">7:30 AM · Send Newsletter</div>
+            <div class="flow-down">↓</div>
+            <div class="flow-box flow-box--api">Resend API<span class="flow-box-sub">→ subscriber emails</span></div>
+          </div>
+          <div class="flow-split-col">
+            <div class="flow-box flow-box--api">6 Serverless APIs</div>
+            <div class="flow-api-list">
+              <span class="flow-api-item">/api/subscribe</span>
+              <span class="flow-api-item">/api/stats</span>
+              <span class="flow-api-item">/api/visit</span>
+              <span class="flow-api-item">/api/admin</span>
+              <span class="flow-api-item">/api/health</span>
+              <span class="flow-api-item">/api/unsubscribe</span>
+            </div>
+            <div class="flow-down">↓</div>
+            <div class="flow-box flow-box--supabase">Supabase Database<span class="flow-box-sub">subscribers · site_analytics</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- BUILT WITH -->
+  <section class="story-section" aria-label="Tech stack">
+    <div class="story-section-inner">
+      <p class="story-section-eyebrow">Stack</p>
+      <h2 class="story-section-title">Built With</h2>
+      <div class="tech-stack-row">
+        <div class="tech-pill"><img src="https://cdn.simpleicons.org/github/white" alt="GitHub" loading="lazy">GitHub</div>
+        <div class="tech-pill"><img src="https://cdn.simpleicons.org/githubactions/white" alt="GitHub Actions" loading="lazy">GitHub Actions</div>
+        <div class="tech-pill"><img src="https://cdn.simpleicons.org/vercel/white" alt="Vercel" loading="lazy">Vercel</div>
+        <div class="tech-pill"><img src="https://cdn.simpleicons.org/supabase" alt="Supabase" loading="lazy">Supabase</div>
+        <div class="tech-pill"><img src="https://cdn.simpleicons.org/python" alt="Python" loading="lazy">Python</div>
+        <div class="tech-pill"><img src="https://cdn.simpleicons.org/resend/white" alt="Resend" loading="lazy">Resend</div>
+        <div class="tech-pill"><span class="tech-pill-text--accent">Groq</span></div>
+        <div class="tech-pill"><span class="tech-pill-text--accent">Tavily</span></div>
+        <div class="tech-pill"><span class="tech-pill-text--purple">Claude · Anthropic</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- BUILD PROCESS -->
+  <section class="story-section" aria-label="Build process">
+    <div class="story-section-inner--narrow">
+      <p class="story-section-eyebrow">Build Log</p>
+      <h2 class="story-section-title">The Real Build Process</h2>
+      <div class="build-steps">
+        <div class="build-step"><div class="build-step-num">1</div><div class="build-step-text">Had an idea for a daily AI-generated people &amp; leadership newsletter</div></div>
+        <div class="build-step"><div class="build-step-num">2</div><div class="build-step-text">Picked the stack — Vercel, Supabase, GitHub Actions, Groq, Tavily</div></div>
+        <div class="build-step"><div class="build-step-num">3</div><div class="build-step-text">Built the Python generation engine with AI assistance</div></div>
+        <div class="build-step"><div class="build-step-num">4</div><div class="build-step-text">Fought Vercel routing for longer than we'd like to admit</div></div>
+        <div class="build-step"><div class="build-step-num">5</div><div class="build-step-text">Discovered serverless functions cannot write files — the hard way</div></div>
+        <div class="build-step"><div class="build-step-num">6</div><div class="build-step-text">Moved all generation to GitHub Actions where it belongs</div></div>
+        <div class="build-step"><div class="build-step-num">7</div><div class="build-step-text">Added smoke checks so we stop breaking production</div></div>
+        <div class="build-step"><div class="build-step-num">8</div><div class="build-step-text">Fixed status.json so the retry workflow stops lying to us</div></div>
+        <div class="build-step build-step--last"><div class="build-step-num">9</div><div class="build-step-text">41 deployments later — it works every morning at 7 AM</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- LEARNINGS -->
+  <section class="story-section" aria-label="Key learnings">
+    <div class="story-section-inner">
+      <p class="story-section-eyebrow">Retrospective</p>
+      <h2 class="story-section-title">What We Learned Building This</h2>
+      <div class="learnings-grid">
+        <div class="learning-card"><span class="learning-num">01</span><span class="learning-text">JAMstack generation: static delivery + scheduled dynamic content are not opposites — they work together perfectly</span></div>
+        <div class="learning-card"><span class="learning-num">02</span><span class="learning-text">GitHub Actions is the right place for content generation, not serverless functions</span></div>
+        <div class="learning-card"><span class="learning-num">03</span><span class="learning-text">Vercel serverless cannot persist files — keep it for APIs only</span></div>
+        <div class="learning-card"><span class="learning-num">04</span><span class="learning-text">status.json is your single source of truth — if it lies, everything breaks</span></div>
+        <div class="learning-card"><span class="learning-num">05</span><span class="learning-text">Smoke checks before real runs save hours of debugging</span></div>
+        <div class="learning-card"><span class="learning-num">06</span><span class="learning-text">41 deployments to get to green — shipping &gt; perfecting</span></div>
+        <div class="learning-card"><span class="learning-num">07</span><span class="learning-text">AI-assisted development works best with surgical, phase-by-phase prompts</span></div>
+        <div class="learning-card"><span class="learning-num">08</span><span class="learning-text">Every ? on a dashboard is a missing API field, not missing data</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- THE MEME -->
+  <section class="story-section" aria-label="Builder meme">
+    <div class="story-section-inner--narrow">
+      <p class="story-section-eyebrow">Reality Check</p>
+      <h2 class="story-section-title">The Meme</h2>
+      <div class="meme-card">
+        <div class="meme-panel meme-panel--top">
+          <p class="meme-label">What I said I'd build over the weekend</p>
+          <div class="meme-diagram">
+            <div class="meme-box">User</div>
+            <span class="meme-arr">→</span>
+            <div class="meme-box">Newsletter</div>
+            <span class="meme-arr">→</span>
+            <div class="meme-box">Done <span class="meme-check">✓</span></div>
+          </div>
+          <p class="meme-sub">Simple daily newsletter. Few hours.</p>
+        </div>
+        <div class="meme-panel meme-panel--bottom">
+          <p class="meme-label">What actually happened</p>
+          <ul class="meme-list">
+            <li>41 Vercel deployments</li>
+            <li>3 complete architecture rewrites</li>
+            <li>1 discovery that serverless can't write files</li>
+            <li>status.json gaslighting the retry workflow</li>
+            <li>Smoke checks, backfill modes, IST timezone bugs</li>
+            <li>7 days, 3 AI assistants, infinite coffee</li>
+          </ul>
+          <p class="meme-footer">Still no live subscriber count. Stylish UI pending.</p>
+        </div>
+      </div>
+      <p class="meme-never-quit">Never Quit. 🚀</p>
+    </div>
+  </section>
+
+  <!-- VIDEO -->
+  <section class="story-section" aria-label="Vibe video">
+    <div class="story-section-inner--narrow" style="text-align:center;">
+      <p class="story-section-eyebrow">Vibe</p>
+      <h2 class="story-section-title">The Soundtrack</h2>
+      <div class="video-wrapper">
+        <iframe
+          src="https://www.youtube.com/embed/bDMwm_IUz5I?start=14&autoplay=0"
+          title="The vibe while building"
+          allow="fullscreen"
+          allowfullscreen
+        ></iframe>
+      </div>
+      <p class="video-caption">The vibe while building 🎵</p>
+    </div>
+  </section>
+
   <!-- SUBSCRIBE -->
   <section id="subscribe-section" class="subscribe-night">
     <div class="subscribe-night-inner">
@@ -148,16 +312,16 @@
       </div>
       <div class="builder-status-grid">
         <div>
-          <span>Total deployments tracked</span>
-          <strong>4 production-readiness deploys</strong>
+          <span>Total deployments</span>
+          <strong>41 production deploys</strong>
         </div>
         <div>
-          <span>Time spent building</span>
-          <strong>May 30-June 6, 2026 build sprint</strong>
+          <span>Build sprint</span>
+          <strong>May 30 – June 6, 2026</strong>
         </div>
         <div>
-          <span>Current challenges</span>
-          <strong>Daily generation verification, live stats, cron reliability</strong>
+          <span>Status</span>
+          <strong>Generation green · APIs live · Cron verified</strong>
         </div>
       </div>
     </div>
