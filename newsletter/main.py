@@ -826,17 +826,31 @@ def _run_send_live_today(force_resend: bool = False) -> None:
             failed += 1
             print(f"    [WARN] Send failed: {result2.get('error','')[:120]}")
 
+    attempted = len(subscribers)
     log_summary(sent, failed, skipped)
     print(f"\nFinal send summary:")
-    print(f"  attempted        : {len(subscribers)}")
+    print(f"  attempted         : {attempted}")
     print(f"  accepted_by_resend: {sent}")
-    print(f"  db_logged        : {db_logged_count}")
-    print(f"  skipped          : {skipped}")
-    print(f"  failed           : {failed}")
-    # Machine-parseable line for workflow summary parsing
-    print(f"STATS: subscribers={len(subscribers)} accepted={sent} db_logged={db_logged_count} skipped={skipped} failed={failed}")
+    print(f"  db_logged         : {db_logged_count}")
+    print(f"  skipped           : {skipped}")
+    print(f"  failed            : {failed}")
 
-    if sent > 0 or skipped > 0:
+    # Determine result status
+    if attempted == 0:
+        send_result = "no_subscribers"
+    elif sent == 0:
+        send_result = "failed"
+    elif failed > 0:
+        send_result = "partial"
+    else:
+        send_result = "success"
+
+    # Machine-parseable lines for workflow summary parsing
+    print(f"STATS: subscribers={attempted} accepted={sent} db_logged={db_logged_count} skipped={skipped} failed={failed}")
+    print(f"SEND_RESULT={send_result}")
+
+    # Only mark issue as sent in Supabase if at least one email was accepted
+    if sent > 0:
         try:
             mark_sent(issue_id)
         except Exception:
@@ -844,14 +858,18 @@ def _run_send_live_today(force_resend: bool = False) -> None:
         set_status(
             "complete",
             email_date=date,
-            email_status="sent",
+            email_status="sent" if send_result == "success" else "partial",
             email_sent_at_utc=utc_now,
         )
-        print(f"Newsletter accepted by Resend.")
-
-    if failed > 0 and sent == 0 and skipped == 0:
+        log.info(f"Newsletter send complete. result={send_result} accepted={sent} failed={failed} skipped={skipped}")
+    else:
         set_status("complete", email_date=date, email_status="failed")
-        log.error("All sends failed.")
+        log.error(f"Newsletter not delivered. result={send_result} attempted={attempted} failed={failed} skipped={skipped}")
+
+    # Exit logic: only exit 0 if at least one email was accepted by Resend
+    if send_result in ("success", "partial"):
+        sys.exit(0)
+    else:
         sys.exit(1)
 
 

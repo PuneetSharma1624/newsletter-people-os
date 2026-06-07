@@ -120,14 +120,44 @@ jobs:
         run: python newsletter/main.py --wait-production-today
 
       - name: "Send live newsletter"
+        id: send
         if: github.event_name == 'schedule' || inputs.send_live == true || inputs.send_live == 'true'
         shell: bash
         run: |
+          set +e
           if [ "${{ inputs.force_resend }}" = "true" ]; then
-            python newsletter/main.py --send-live-today --force-resend
+            python newsletter/main.py --send-live-today --force-resend 2>&1 | tee /tmp/send_output.txt
           else
-            python newsletter/main.py --send-live-today
+            python newsletter/main.py --send-live-today 2>&1 | tee /tmp/send_output.txt
           fi
+          SEND_EXIT=${PIPESTATUS[0]}
+
+          # Parse machine-readable lines from output
+          SEND_RESULT=$(grep '^SEND_RESULT=' /tmp/send_output.txt | tail -1 | cut -d= -f2 || echo "unknown")
+          STATS_LINE=$(grep '^STATS: subscribers=' /tmp/send_output.txt | tail -1 || echo "")
+          ATTEMPTED=$(echo "$STATS_LINE" | grep -oP 'subscribers=\K[0-9]+' || echo "0")
+          ACCEPTED=$(echo "$STATS_LINE" | grep -oP 'accepted=\K[0-9]+' || echo "0")
+          DB_LOGGED=$(echo "$STATS_LINE" | grep -oP 'db_logged=\K[0-9]+' || echo "0")
+          SKIPPED=$(echo "$STATS_LINE" | grep -oP 'skipped=\K[0-9]+' || echo "0")
+          FAILED=$(echo "$STATS_LINE" | grep -oP 'failed=\K[0-9]+' || echo "0")
+
+          echo "send_result=${SEND_RESULT}" >> "$GITHUB_OUTPUT"
+          echo "attempted=${ATTEMPTED}" >> "$GITHUB_OUTPUT"
+          echo "accepted=${ACCEPTED}" >> "$GITHUB_OUTPUT"
+          echo "db_logged=${DB_LOGGED}" >> "$GITHUB_OUTPUT"
+          echo "skipped=${SKIPPED}" >> "$GITHUB_OUTPUT"
+          echo "failed=${FAILED}" >> "$GITHUB_OUTPUT"
+
+          echo "======================================"
+          echo "SEND_RESULT : $SEND_RESULT"
+          echo "attempted   : $ATTEMPTED"
+          echo "accepted    : $ACCEPTED"
+          echo "db_logged   : $DB_LOGGED"
+          echo "skipped     : $SKIPPED"
+          echo "failed      : $FAILED"
+          echo "======================================"
+
+          exit $SEND_EXIT
 
       - name: "Dry check only (manual — send_live not true)"
         if: github.event_name == 'workflow_dispatch' && inputs.send_live != true && inputs.send_live != 'true'
@@ -182,7 +212,15 @@ jobs:
           TODAY=$(TZ='Asia/Kolkata' date '+%Y-%m-%d')
           BASE="${BASE_URL:-not_set}"
           PROD_URL="${BASE}/data/issues/${TODAY}.json"
-          STATUS="${{ job.status }}"
+          JOB_STATUS="${{ job.status }}"
+          SEND_RESULT="${{ steps.send.outputs.send_result }}"
+          ATTEMPTED="${{ steps.send.outputs.attempted }}"
+          ACCEPTED="${{ steps.send.outputs.accepted }}"
+          DB_LOGGED="${{ steps.send.outputs.db_logged }}"
+          SKIPPED="${{ steps.send.outputs.skipped }}"
+          FAILED="${{ steps.send.outputs.failed }}"
+          # Fall back to job status label if send step did not run (dry-check only)
+          [ -z "$SEND_RESULT" ] && SEND_RESULT="dry_check_only"
           cat >> $GITHUB_STEP_SUMMARY <<SUMMARY
           ## Send Newsletter — $TODAY
           | Field | Value |
@@ -196,5 +234,11 @@ jobs:
           | Production JSON URL | $PROD_URL |
           | send_live | ${{ inputs.send_live || 'true (scheduled)' }} |
           | force_resend | ${{ inputs.force_resend || 'false' }} |
-          | Final result | $STATUS |
+          | attempted | ${ATTEMPTED:-—} |
+          | accepted_by_resend | ${ACCEPTED:-—} |
+          | db_logged | ${DB_LOGGED:-—} |
+          | skipped | ${SKIPPED:-—} |
+          | failed | ${FAILED:-—} |
+          | send_result | **${SEND_RESULT}** |
+          | job status | $JOB_STATUS |
           SUMMARY
