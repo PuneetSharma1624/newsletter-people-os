@@ -42,16 +42,28 @@ def get_latest_issue() -> dict[str, Any] | None:
 
 
 def list_issues(limit: int = 60) -> list[dict[str, Any]]:
-    """Return archive list (date, subject, preheader, section count) desc."""
+    """Return archive list. Selects only columns that exist in minimal schema."""
     client = _client()
-    result = (
-        client.table("newsletter_issues")
-        .select("id, issue_date, subject, preheader, sections, created_at, sent_at")
-        .order("issue_date", desc=True)
-        .limit(limit)
-        .execute()
-    )
-    return result.data or []
+    # sections column may not exist — select only safe columns
+    try:
+        result = (
+            client.table("newsletter_issues")
+            .select("id, issue_date, subject, preheader, created_at, sent_at")
+            .order("issue_date", desc=True)
+            .limit(limit)
+            .execute()
+        )
+        return result.data or []
+    except Exception as exc:
+        log.warning(f"list_issues full select failed: {exc} — trying minimal")
+        result = (
+            client.table("newsletter_issues")
+            .select("id, issue_date")
+            .order("issue_date", desc=True)
+            .limit(limit)
+            .execute()
+        )
+        return result.data or []
 
 
 def list_available_dates() -> list[str]:
@@ -91,43 +103,98 @@ def save_issue(issue: dict[str, Any], html: str, text: str) -> dict[str, Any]:
     raise RuntimeError(f"Failed to save issue for {issue['issue_date']}")
 
 
-def ensure_newsletter_issue(issue: dict[str, Any], html: str, text: str) -> str:
+def _fetch_issue_uuid(issue_date: str) -> str | None:
     """
-    Get or create newsletter_issues row. Always returns a real UUID string.
-    Handles duplicate issue_date gracefully (select-then-insert pattern).
-    Raises RuntimeError only if UUID cannot be obtained after all attempts.
+    Try to find existing newsletter_issues row for date.
+    Tolerates schema variations (issue_date vs date column).
+    Returns UUID string or None.
     """
-    issue_date = issue["issue_date"]
-
-    existing = get_issue_by_date(issue_date)
-    if existing:
-        log.info(f"DB issue row found: {existing['id']}")
-        return existing["id"]
-
     client = _client()
-    payload = {
-        "issue_date": issue_date,
-        "subject": issue.get("subject", ""),
-        "preheader": issue.get("preheader", ""),
-        "html": html,
-        "text": text,
-        "sections": issue.get("sections", []),
-        "sources": _extract_sources(issue),
-    }
+
+    # Try issue_date column (preferred)
+    try:
+        result = client.table("newsletter_issues").select("id").eq("issue_date", issue_date).limit(1).execute()
+        if result.data:
+            return result.data[0]["id"]
+    except Exception as exc:
+        log.warning(f"fetch by issue_date failed: {exc}")
+
+    # Try date column (fallback)
+    try:
+        result = client.table("newsletter_issues").select("id").eq("date", issue_date).limit(1).execute()
+        if result.data:
+            return result.data[0]["id"]
+    except Exception:
+        pass
+
+    return None
+
+
+def _try_insert_issue(client, payload: dict) -> str | None:
+    """Attempt insert. Returns UUID string on success, None on failure."""
     try:
         result = client.table("newsletter_issues").insert(payload).execute()
-        data = result.data
-        if data:
-            log.info(f"DB issue row created: {data[0]['id']}")
-            return data[0]["id"]
+        if result.data and result.data[0].get("id"):
+            return result.data[0]["id"]
     except Exception as exc:
-        log.warning(f"DB insert failed for {issue_date}: {exc} — retrying fetch")
-        existing = get_issue_by_date(issue_date)
-        if existing:
-            log.info(f"DB issue row found after retry: {existing['id']}")
-            return existing["id"]
+        log.warning(f"Insert attempt failed ({list(payload.keys())}): {str(exc)[:120]}")
+    return None
 
-    raise RuntimeError(f"Could not get or create newsletter_issues row for {issue_date}")
+
+def ensure_newsletter_issue(issue: dict[str, Any], html: str = "", text: str = "") -> str:
+    """
+    Get or create newsletter_issues row for send identity.
+    Always returns a real UUID string.
+    Uses minimal payload with fallback variants — never inserts sections/sources/html/text
+    unless they succeed. Never aborts due to missing optional columns.
+    """
+    issue_date = issue["issue_date"]
+    subject = issue.get("subject", f"PeopleOS Brief — {issue_date}")
+    preheader = issue.get("preheader", "")
+    title = f"PeopleOS Brief — {issue_date}"
+    slug = f"static-{issue_date}"
+
+    # Step 1: fetch existing row
+    existing_id = _fetch_issue_uuid(issue_date)
+    if existing_id:
+        log.info(f"DB issue row found: {existing_id}")
+        return existing_id
+
+    client = _client()
+
+    # Step 2: try insert with progressively smaller payloads
+    # Never include: sections, sources, executive_summary, dashboard_items, email_items
+    insert_attempts = [
+        # A: richest safe payload with html/text
+        {"issue_date": issue_date, "subject": subject, "preheader": preheader, "html": html, "text": text},
+        # B: no html/text (large blobs may cause issues)
+        {"issue_date": issue_date, "subject": subject, "preheader": preheader},
+        # C: minimal with issue_date
+        {"issue_date": issue_date, "subject": subject},
+        # D: bare minimum with issue_date
+        {"issue_date": issue_date},
+        # E: try date column instead
+        {"date": issue_date, "subject": subject},
+        # F: try date column bare
+        {"date": issue_date},
+    ]
+
+    for payload in insert_attempts:
+        uid = _try_insert_issue(client, payload)
+        if uid:
+            log.info(f"DB issue row created (fields: {list(payload.keys())}): {uid}")
+            return uid
+        # After each failed insert, try fetch again (duplicate race condition)
+        existing_id = _fetch_issue_uuid(issue_date)
+        if existing_id:
+            log.info(f"DB issue row found after insert retry: {existing_id}")
+            return existing_id
+
+    raise RuntimeError(
+        f"Could not get or create newsletter_issues row for {issue_date}. "
+        f"Tried fetch + {len(insert_attempts)} insert variants. "
+        f"Check newsletter_issues schema in Supabase."
+    )
 
 
 def _extract_sources(issue: dict) -> list[dict]:
@@ -146,11 +213,14 @@ def _extract_sources(issue: dict) -> list[dict]:
 
 
 def mark_sent(issue_id: str) -> None:
-    client = _client()
-    client.table("newsletter_issues").update(
-        {"sent_at": datetime.datetime.utcnow().isoformat()}
-    ).eq("id", issue_id).execute()
-    log.info(f"Issue {issue_id} marked sent")
+    try:
+        client = _client()
+        client.table("newsletter_issues").update(
+            {"sent_at": datetime.datetime.utcnow().isoformat()}
+        ).eq("id", issue_id).execute()
+        log.info(f"Issue {issue_id} marked sent")
+    except Exception as exc:
+        log.warning(f"mark_sent failed for {issue_id}: {exc} — non-fatal, continuing")
 
 
 def get_or_create_issue(
