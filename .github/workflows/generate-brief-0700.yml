@@ -2,7 +2,7 @@ name: "1. Generate Brief — 7:00 AM IST"
 
 on:
   schedule:
-    - cron: "30 1 * * *"   # 01:30 UTC = 07:00 IST
+    - cron: "33 1 * * *"   # 01:33 UTC = 07:03 IST
   workflow_dispatch:
     inputs:
       mode:
@@ -19,7 +19,7 @@ on:
         default: ""
 
 concurrency:
-  group: peopleos-brief-daily-${{ github.ref }}
+  group: peopleos-daily-generation
   cancel-in-progress: false
 
 permissions:
@@ -119,15 +119,32 @@ jobs:
           echo "--- dates.json latest date ---"
           python -c "import json; d=json.load(open('landing/data/dates.json')); print(d['dates'][0] if d.get('dates') else 'empty')" 2>/dev/null || echo "(not found)"
 
-      - name: Mark generation started
-        if: github.event_name == 'schedule' || inputs.mode == 'ensure_today' || inputs.mode == 'generate_today_force' || inputs.force == 'true'
-        run: python newsletter/main.py --mark-generation-started
+      - name: Check today's issue before generation
+        id: check_today
+        if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.mode == 'ensure_today')
+        shell: bash
+        run: |
+          set +e
+          python newsletter/main.py --check-today
+          code=$?
+          set -e
+          if [ "$code" -eq 0 ]; then
+            echo "complete=true" >> "$GITHUB_OUTPUT"
+            echo "Today's issue is already complete. Skipping generation."
+          else
+            echo "complete=false" >> "$GITHUB_OUTPUT"
+            echo "Today's issue is missing or incomplete. Force generation required."
+          fi
 
-      - name: "Generate today's issue (scheduled — idempotent)"
-        if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.mode == 'ensure_today' && inputs.force != 'true')
-        run: python newsletter/main.py --ensure-today
+      - name: Generate today's issue if incomplete
+        if: (github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.mode == 'ensure_today')) && steps.check_today.outputs.complete != 'true'
+        run: python newsletter/main.py --generate-today --force
 
-      - name: "Generate today's issue (force)"
+      - name: Validate today's issue after generation
+        if: (github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.mode == 'ensure_today')) && steps.check_today.outputs.complete != 'true'
+        run: python newsletter/main.py --check-today
+
+      - name: "Generate today's issue (force — manual dispatch)"
         if: github.event_name == 'workflow_dispatch' && (inputs.mode == 'generate_today_force' || inputs.force == 'true')
         run: |
           python newsletter/main.py --generate-today --force
@@ -183,6 +200,10 @@ jobs:
           git log --oneline -3
           echo "--- git status ---"
           git status
+
+      - name: Mark generation failed if workflow failed
+        if: failure()
+        run: python newsletter/main.py --mark-generation-failed || true
 
       - name: Prune old archives (scheduled only)
         if: github.event_name == 'schedule'

@@ -36,7 +36,14 @@
       "Bash(sed -i \"s|/api/admin/login|/api/admin?action=status|g\" landing/admin.html)",
       "Bash(python -m compileall api/ -q)",
       "Bash(python -m pytest tests/test_idempotency.py -q)",
-      "Bash(python -m compileall api -q)"
+      "Bash(python -m compileall api -q)",
+      "Bash(python -m compileall api/stats.py -q)",
+      "Bash(git pull *)",
+      "Bash(git stash *)",
+      "Bash(git fetch *)",
+      "Bash(python newsletter/main.py --ensure-today)",
+      "Bash(python -m py_compile newsletter/main.py)",
+      "Bash(python newsletter/main.py --help)"
     ]
   }
 }

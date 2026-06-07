@@ -76,81 +76,88 @@ def _generate_issue(
     if not dry_run:
         set_status("running", current_date=date)
 
-    # Load partial progress (resume support)
-    done_sections = {}
-    if not force and not dry_run:
-        partial = load_partial(date)
-        for s in partial:
-            done_sections[s.get("section_id", s.get("code", ""))] = s
-        if done_sections:
-            log.info(f"Resuming: {len(done_sections)} sections already done")
+    try:
+        # Load partial progress (resume support)
+        done_sections = {}
+        if not force and not dry_run:
+            partial = load_partial(date)
+            for s in partial:
+                done_sections[s.get("section_id", s.get("code", ""))] = s
+            if done_sections:
+                log.info(f"Resuming: {len(done_sections)} sections already done")
 
-    search_delay = config.section_search_delay()
-    section_delay = config.groq_section_delay()
-    generated_sections = []
+        search_delay = config.section_search_delay()
+        section_delay = config.groq_section_delay()
+        generated_sections = []
 
-    for i, section in enumerate(SECTIONS):
-        sid = section["id"]
+        for i, section in enumerate(SECTIONS):
+            sid = section["id"]
 
-        # Skip already-done sections when resuming
-        if sid in done_sections:
-            log.info(f"{section['code']} {section['name']} — loaded from partial")
-            generated_sections.append(done_sections[sid])
-            continue
+            # Skip already-done sections when resuming
+            if sid in done_sections:
+                log.info(f"{section['code']} {section['name']} — loaded from partial")
+                generated_sections.append(done_sections[sid])
+                continue
 
-        # Search
-        log.info(f"{section['code']} {section['name']} — searching sources...")
-        try:
-            sources = search_section(section)
-        except Exception as exc:
-            log.error(f"{section['code']} search failed: {exc}")
-            sources = []
+            # Search
+            log.info(f"{section['code']} {section['name']} — searching sources...")
+            try:
+                sources = search_section(section)
+            except Exception as exc:
+                log.error(f"{section['code']} search failed: {exc}")
+                sources = []
 
-        if i > 0 and search_delay > 0:
-            time.sleep(search_delay)
+            if i > 0 and search_delay > 0:
+                time.sleep(search_delay)
 
-        # Generate
-        log.info(f"{section['code']} {section['name']} — generating with Groq...")
-        sec_result = generate_section(section, sources, date)
-        generated_sections.append(sec_result)
+            # Generate
+            log.info(f"{section['code']} {section['name']} — generating with Groq...")
+            sec_result = generate_section(section, sources, date)
+            generated_sections.append(sec_result)
 
-        # Save partial progress
+            # Save partial progress
+            if not dry_run:
+                save_partial(date, generated_sections)
+                set_status("running", current_date=date, sections_complete=len(generated_sections))
+
+            # Wait before next section (rate limit safety)
+            if i < len(SECTIONS) - 1 and section_delay > 0:
+                log.info(f"Waiting {section_delay:.0f}s before next section...")
+                time.sleep(section_delay)
+
+        # Generate executive summary from assembled sections
+        log.info("Generating executive summary...")
+        exec_summary = generate_executive_summary(generated_sections, date)
+
+        # Assemble full issue
+        total_items = sum(len(s.get("items", [])) for s in generated_sections)
+        email_items = sum(min(len(s.get("items", [])), 2) for s in generated_sections)
+
+        issue = {
+            "issue_date": date,
+            "title": f"PeopleOS Brief — {date}",
+            "subject": f"PeopleOS Brief — {_fmt_date(date)} Intelligence",
+            "preheader": "12-section daily executive intelligence across markets, AI, HR, and economics.",
+            "executive_summary": exec_summary,
+            "total_sections": len(generated_sections),
+            "total_dashboard_items": total_items,
+            "total_email_items": email_items,
+            "sections": generated_sections,
+            "sources": [],
+        }
+
+        if save and not dry_run:
+            save_issue(issue)
+            set_status("complete", current_date=date, sections_complete=len(generated_sections))
+            log.info(f"Issue complete: {total_items} dashboard items, {email_items} email items")
+
+        return issue
+
+    except Exception as exc:
         if not dry_run:
-            save_partial(date, generated_sections)
-            set_status("running", current_date=date, sections_complete=len(generated_sections))
-
-        # Wait before next section (rate limit safety)
-        if i < len(SECTIONS) - 1 and section_delay > 0:
-            log.info(f"Waiting {section_delay:.0f}s before next section...")
-            time.sleep(section_delay)
-
-    # Generate executive summary from assembled sections
-    log.info("Generating executive summary...")
-    exec_summary = generate_executive_summary(generated_sections, date)
-
-    # Assemble full issue
-    total_items = sum(len(s.get("items", [])) for s in generated_sections)
-    email_items = sum(min(len(s.get("items", [])), 2) for s in generated_sections)
-
-    issue = {
-        "issue_date": date,
-        "title": f"PeopleOS Brief — {date}",
-        "subject": f"PeopleOS Brief — {_fmt_date(date)} Intelligence",
-        "preheader": "12-section daily executive intelligence across markets, AI, HR, and economics.",
-        "executive_summary": exec_summary,
-        "total_sections": len(generated_sections),
-        "total_dashboard_items": total_items,
-        "total_email_items": email_items,
-        "sections": generated_sections,
-        "sources": [],
-    }
-
-    if save and not dry_run:
-        save_issue(issue)
-        set_status("complete", current_date=date, sections_complete=len(generated_sections))
-        log.info(f"Issue complete: {total_items} dashboard items, {email_items} email items")
-
-    return issue
+            log.error(f"Generation failed with exception: {exc}")
+            set_status("failed", current_date=date, error=str(exc))
+        raise
 
 
 # ─── COMMANDS ────────────────────────────────────────────────────────────────
@@ -539,6 +546,7 @@ def _run_ensure_today(admin_force: bool = False) -> None:
         sys.exit(0)
 
     # Check if in_progress and fresh (< 30 min) — don't double-generate
+    # Exit 1 (not 0) so calling workflows know issue is NOT ready.
     s = get_status()
     if not admin_force and s.get("generation_status") in ("in_progress", "running"):
         started = s.get("generation_started_at_utc") or s.get("last_started_at")
@@ -550,12 +558,12 @@ def _run_ensure_today(admin_force: bool = False) -> None:
                 )
                 age_min = (dt_mod.datetime.now(dt_mod.timezone.utc) - start_dt).total_seconds() / 60
                 if age_min < 30:
-                    print(f"Generation is in_progress (started {age_min:.1f}m ago). Skipping to avoid duplicate.")
-                    print("Use --force to override, or wait 30 minutes.")
-                    sys.exit(0)
+                    print(f"Generation is in_progress (started {age_min:.1f}m ago). Issue not yet complete.")
+                    print("Use --force to bypass, or wait for generation to finish.")
+                    sys.exit(1)
                 elif age_min < 45:
-                    print(f"Generation in_progress but {age_min:.1f}m ago — waiting to be safe.")
-                    sys.exit(0)
+                    print(f"Generation in_progress but {age_min:.1f}m ago — issue still not complete.")
+                    sys.exit(1)
                 else:
                     print(f"Generation in_progress but stale ({age_min:.1f}m ago). Forcing retry.")
             except Exception:

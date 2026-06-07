@@ -2,7 +2,7 @@ name: "2. Check & Retry Brief — 7:15 AM IST"
 
 on:
   schedule:
-    - cron: "45 1 * * *"   # 01:45 UTC = 07:15 IST
+    - cron: "20 2 * * *"   # 02:20 UTC = 07:50 IST
   workflow_dispatch:
     inputs:
       mode:
@@ -11,7 +11,7 @@ on:
         default: "check_retry"
 
 concurrency:
-  group: peopleos-brief-daily-${{ github.ref }}
+  group: peopleos-daily-generation
   cancel-in-progress: false
 
 permissions:
@@ -117,13 +117,15 @@ jobs:
         run: |
           echo "Today's brief is complete. No retry needed."
 
-      - name: "Retry generation if incomplete"
+      - name: "Force retry generation if incomplete"
         if: (github.event_name != 'workflow_dispatch' || inputs.mode != 'smoke_check') && steps.check.outputs.BRIEF_COMPLETE != 'true'
         run: |
-          echo "Today's brief is missing or incomplete. Running retry..."
-          python newsletter/main.py --ensure-today
-          echo "--- Post-retry validation ---"
-          python newsletter/main.py --check-today
+          echo "Today's brief is missing or incomplete. Running forced retry..."
+          python newsletter/main.py --generate-today --force
+
+      - name: "Validate after retry"
+        if: (github.event_name != 'workflow_dispatch' || inputs.mode != 'smoke_check') && steps.check.outputs.BRIEF_COMPLETE != 'true'
+        run: python newsletter/main.py --check-today
 
       - name: Audit source links (on retry only)
         if: (github.event_name != 'workflow_dispatch' || inputs.mode != 'smoke_check') && steps.check.outputs.BRIEF_COMPLETE != 'true'
@@ -142,6 +144,10 @@ jobs:
             git commit -m "PeopleOS Brief retry — $TODAY [skip ci]"
             git push || echo "Nothing to push"
           fi
+
+      - name: Mark generation failed if workflow failed
+        if: failure()
+        run: python newsletter/main.py --mark-generation-failed || true
 
       - name: "Log: final status"
         if: github.event_name != 'workflow_dispatch' || inputs.mode != 'smoke_check'

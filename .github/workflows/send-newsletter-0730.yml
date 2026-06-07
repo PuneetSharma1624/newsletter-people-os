@@ -2,7 +2,7 @@ name: "3. Send Newsletter — 7:30 AM IST"
 
 on:
   schedule:
-    - cron: "0 2 * * *"   # 02:00 UTC = 07:30 IST
+    - cron: "45 2 * * *"   # 02:45 UTC = 08:15 IST
   workflow_dispatch:
     inputs:
       send_live:
@@ -11,11 +11,11 @@ on:
         default: "false"
 
 concurrency:
-  group: peopleos-brief-daily-${{ github.ref }}
+  group: peopleos-daily-send
   cancel-in-progress: false
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   send:
@@ -83,8 +83,21 @@ jobs:
           echo "--- status.json ---"
           cat landing/data/status.json 2>/dev/null || echo "(not found)"
 
-      - name: "Validate today's issue exists"
-        run: python newsletter/main.py --check-today
+      - name: Wait for today's issue to be ready
+        shell: bash
+        run: |
+          for i in {1..15}; do
+            echo "Checking today's issue readiness — attempt $i/15..."
+            git pull origin main --quiet
+            if python newsletter/main.py --check-today; then
+              echo "Today's issue is ready."
+              exit 0
+            fi
+            echo "Today's issue is not ready yet. Waiting 60 seconds..."
+            sleep 60
+          done
+          echo "Today's issue is still missing or incomplete after 15 minutes."
+          exit 1
 
       - name: "Send live (scheduled — auto-send)"
         if: github.event_name == 'schedule'
