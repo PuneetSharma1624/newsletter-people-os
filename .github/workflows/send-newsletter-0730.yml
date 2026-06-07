@@ -140,3 +140,61 @@ jobs:
         run: |
           echo "--- status.json after ---"
           cat landing/data/status.json 2>/dev/null || echo "(not found)"
+
+      - name: Write automation-health.json (send)
+        if: always()
+        run: |
+          IST=$(TZ='Asia/Kolkata' date '+%Y-%m-%d %H:%M:%S IST')
+          UTC=$(date -u '+%Y-%m-%d %H:%M:%SZ')
+          TODAY=$(TZ='Asia/Kolkata' date '+%Y-%m-%d')
+          OVERALL="${{ job.status }}"
+          python - <<PYEOF
+          import json, pathlib, os
+          health_file = pathlib.Path("landing/data/automation-health.json")
+          try:
+              existing = json.loads(health_file.read_text()) if health_file.exists() else {}
+          except Exception:
+              existing = {}
+          existing["last_send"] = {
+              "event_name": os.environ.get("GITHUB_EVENT_NAME", "unknown"),
+              "run_id": "${{ github.run_id }}",
+              "issue_date": "$TODAY",
+              "status": "${OVERALL}".lower(),
+              "ist_time": "$IST",
+              "utc_time": "$UTC",
+              "send_live": "${{ inputs.send_live || 'true (scheduled)' }}",
+          }
+          health_file.parent.mkdir(parents=True, exist_ok=True)
+          health_file.write_text(json.dumps(existing, indent=2))
+          print("automation-health.json updated (send)")
+          PYEOF
+          git config user.name "peopleos-brief-bot" 2>/dev/null || true
+          git config user.email "actions@github.com" 2>/dev/null || true
+          git add landing/data/automation-health.json
+          git diff --staged --quiet || git commit -m "chore: update automation-health.json [skip ci]" || true
+          git push || true
+
+      - name: Job summary (send)
+        if: always()
+        run: |
+          IST=$(TZ='Asia/Kolkata' date '+%Y-%m-%d %H:%M:%S IST')
+          UTC=$(date -u '+%Y-%m-%d %H:%M:%SZ')
+          TODAY=$(TZ='Asia/Kolkata' date '+%Y-%m-%d')
+          BASE="${BASE_URL:-not_set}"
+          PROD_URL="${BASE}/data/issues/${TODAY}.json"
+          STATUS="${{ job.status }}"
+          cat >> $GITHUB_STEP_SUMMARY <<SUMMARY
+          ## Send Newsletter — $TODAY
+          | Field | Value |
+          |---|---|
+          | Workflow | send-newsletter |
+          | Event | ${{ github.event_name }} |
+          | Run ID | ${{ github.run_id }} |
+          | UTC time | $UTC |
+          | IST time | $IST |
+          | Issue date | $TODAY |
+          | Production JSON URL | $PROD_URL |
+          | send_live | ${{ inputs.send_live || 'true (scheduled)' }} |
+          | force_resend | ${{ inputs.force_resend || 'false' }} |
+          | Final result | $STATUS |
+          SUMMARY

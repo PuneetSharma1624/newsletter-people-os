@@ -259,6 +259,25 @@ def _action_log_write(body):
         return {'ok': True, 'note': 'log_failed', 'detail': str(exc)[:200]}
 
 
+def _action_email_diagnostics():
+    """Return email config status — boolean flags only, no secret values."""
+    raw_base = os.environ.get("BASE_URL", "").strip()
+    base_is_localhost = bool(raw_base and ("localhost" in raw_base or "127.0.0.1" in raw_base))
+    # Safe to show the URL itself (not a secret), but reject preview URLs
+    safe_base = raw_base if (raw_base and not base_is_localhost) else ""
+    return {
+        "ok": True,
+        "email_config": {
+            "has_resend_api_key": bool(os.environ.get("RESEND_API_KEY", "").strip()),
+            "has_newsletter_from_email": bool(os.environ.get("NEWSLETTER_FROM_EMAIL", "").strip()),
+            "has_newsletter_reply_to": bool(os.environ.get("NEWSLETTER_REPLY_TO", "").strip()),
+            "base_url": safe_base or "(not set or localhost)",
+            "base_url_is_localhost": base_is_localhost,
+            "base_url_is_set": bool(raw_base),
+        },
+    }
+
+
 def _action_check_today():
     today = _today_ist()
     try:
@@ -352,6 +371,8 @@ class handler(BaseHTTPRequestHandler):
             self._json(_action_logs())
         elif action == 'check_today':
             self._json(_action_check_today())
+        elif action == 'email_diagnostics':
+            self._json(_action_email_diagnostics())
         else:
             self._json({'ok': False, 'error': f'Unknown GET action: {action}'}, 400)
 

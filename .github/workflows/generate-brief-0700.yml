@@ -208,3 +208,67 @@ jobs:
       - name: Prune old archives (scheduled only)
         if: github.event_name == 'schedule'
         run: python newsletter/main.py --prune-archive || echo "Prune optional — continuing"
+
+      - name: Write automation-health.json (generate)
+        if: always()
+        run: |
+          IST=$(TZ='Asia/Kolkata' date '+%Y-%m-%d %H:%M:%S IST')
+          UTC=$(date -u '+%Y-%m-%d %H:%M:%SZ')
+          TODAY=$(TZ='Asia/Kolkata' date '+%Y-%m-%d')
+          ISSUE_FILE="landing/data/issues/${TODAY}.json"
+          FILE_EXISTS="false"
+          [ -f "$ISSUE_FILE" ] && FILE_EXISTS="true"
+          OVERALL="${{ job.status }}"
+          python - <<PYEOF
+          import json, pathlib, os
+          health_file = pathlib.Path("landing/data/automation-health.json")
+          try:
+              existing = json.loads(health_file.read_text()) if health_file.exists() else {}
+          except Exception:
+              existing = {}
+          existing["last_generate"] = {
+              "event_name": os.environ.get("GITHUB_EVENT_NAME", "unknown"),
+              "run_id": "${{ github.run_id }}",
+              "issue_date": "$TODAY",
+              "issue_file_exists": $FILE_EXISTS == "true",
+              "status": "${OVERALL}".lower(),
+              "ist_time": "$IST",
+              "utc_time": "$UTC",
+          }
+          health_file.parent.mkdir(parents=True, exist_ok=True)
+          health_file.write_text(json.dumps(existing, indent=2))
+          print(f"automation-health.json updated (generate)")
+          PYEOF
+          git config user.name "peopleos-brief-bot" 2>/dev/null || true
+          git config user.email "actions@github.com" 2>/dev/null || true
+          git add landing/data/automation-health.json
+          git diff --staged --quiet || git commit -m "chore: update automation-health.json [skip ci]" || true
+          git push || true
+
+      - name: Job summary (generate)
+        if: always()
+        run: |
+          IST=$(TZ='Asia/Kolkata' date '+%Y-%m-%d %H:%M:%S IST')
+          UTC=$(date -u '+%Y-%m-%d %H:%M:%SZ')
+          TODAY=$(TZ='Asia/Kolkata' date '+%Y-%m-%d')
+          ISSUE_FILE="landing/data/issues/${TODAY}.json"
+          FILE_EXISTS="no"
+          [ -f "$ISSUE_FILE" ] && FILE_EXISTS="yes"
+          CHECK_RESULT="failed"
+          python newsletter/main.py --check-today 2>/dev/null && CHECK_RESULT="passed" || true
+          STATUS="${{ job.status }}"
+          cat >> $GITHUB_STEP_SUMMARY <<SUMMARY
+          ## Generate Brief — $TODAY
+          | Field | Value |
+          |---|---|
+          | Workflow | generate-brief |
+          | Event | ${{ github.event_name }} |
+          | Run ID | ${{ github.run_id }} |
+          | Branch | ${{ github.ref }} |
+          | UTC time | $UTC |
+          | IST time | $IST |
+          | Issue date | $TODAY |
+          | Issue file exists | $FILE_EXISTS |
+          | check-today result | $CHECK_RESULT |
+          | Final result | $STATUS |
+          SUMMARY

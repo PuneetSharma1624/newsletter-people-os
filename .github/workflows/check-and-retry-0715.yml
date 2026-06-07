@@ -154,3 +154,60 @@ jobs:
         run: |
           echo "--- status.json after ---"
           cat landing/data/status.json 2>/dev/null || echo "(not found)"
+
+      - name: Write automation-health.json (retry)
+        if: always()
+        run: |
+          IST=$(TZ='Asia/Kolkata' date '+%Y-%m-%d %H:%M:%S IST')
+          UTC=$(date -u '+%Y-%m-%d %H:%M:%SZ')
+          RETRY_RAN="${{ steps.check.outputs.BRIEF_COMPLETE != 'true' }}"
+          OVERALL="${{ job.status }}"
+          python - <<PYEOF
+          import json, pathlib, os
+          health_file = pathlib.Path("landing/data/automation-health.json")
+          try:
+              existing = json.loads(health_file.read_text()) if health_file.exists() else {}
+          except Exception:
+              existing = {}
+          brief_complete = "${{ steps.check.outputs.BRIEF_COMPLETE }}" == "true"
+          existing["last_retry"] = {
+              "event_name": os.environ.get("GITHUB_EVENT_NAME", "unknown"),
+              "run_id": "${{ github.run_id }}",
+              "status": "${OVERALL}".lower(),
+              "retry_needed": not brief_complete,
+              "ist_time": "$IST",
+              "utc_time": "$UTC",
+          }
+          health_file.parent.mkdir(parents=True, exist_ok=True)
+          health_file.write_text(json.dumps(existing, indent=2))
+          print("automation-health.json updated (retry)")
+          PYEOF
+          git config user.name "peopleos-brief-bot" 2>/dev/null || true
+          git config user.email "actions@github.com" 2>/dev/null || true
+          git add landing/data/automation-health.json
+          git diff --staged --quiet || git commit -m "chore: update automation-health.json [skip ci]" || true
+          git push || true
+
+      - name: Job summary (retry)
+        if: always()
+        run: |
+          IST=$(TZ='Asia/Kolkata' date '+%Y-%m-%d %H:%M:%S IST')
+          UTC=$(date -u '+%Y-%m-%d %H:%M:%SZ')
+          BRIEF_COMPLETE="${{ steps.check.outputs.BRIEF_COMPLETE }}"
+          RETRY_RAN="no"
+          [ "$BRIEF_COMPLETE" != "true" ] && RETRY_RAN="yes"
+          STATUS="${{ job.status }}"
+          cat >> $GITHUB_STEP_SUMMARY <<SUMMARY
+          ## Check & Retry Brief
+          | Field | Value |
+          |---|---|
+          | Workflow | check-and-retry |
+          | Event | ${{ github.event_name }} |
+          | Run ID | ${{ github.run_id }} |
+          | UTC time | $UTC |
+          | IST time | $IST |
+          | check-today result | $([ "$BRIEF_COMPLETE" = "true" ] && echo "passed" || echo "failed") |
+          | Retry needed | $RETRY_RAN |
+          | Force generate run | $RETRY_RAN |
+          | Final result | $STATUS |
+          SUMMARY

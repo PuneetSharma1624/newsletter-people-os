@@ -48,16 +48,47 @@ def _safe_base_url() -> str | None:
 
 
 def _send_welcome_email(email: str) -> dict:
-    """Send welcome email via Resend. Returns {"ok": bool, "error": str}."""
+    """
+    Send welcome email via Resend. Returns structured dict:
+      success: {"ok": True, "status": "sent", "resend_id": "re_...", "error_code": None, "error_message": None}
+      failure: {"ok": False, "status": "failed", "resend_id": None, "error_code": "<code>", "error_message": "<msg>"}
+
+    base_url source: os.environ.get("BASE_URL") — validated to reject localhost and Vercel preview URLs.
+    """
+    # ── env validation (Phase 3) ─────────────────────────────────────────────
     resend_key = os.environ.get("RESEND_API_KEY", "").strip()
     from_email = os.environ.get("NEWSLETTER_FROM_EMAIL", "").strip()
-    base_url = _safe_base_url() or ""
+    reply_to   = os.environ.get("NEWSLETTER_REPLY_TO", "").strip()
+    raw_base   = os.environ.get("BASE_URL", "").strip()
+    base_url   = _safe_base_url() or ""
 
-    if not resend_key or not from_email:
-        return {"ok": False, "error": "Resend not configured"}
+    masked = _mask_email(email)
+    has_key      = bool(resend_key)
+    has_from     = bool(from_email)
+    has_reply_to = bool(reply_to)
+    base_log     = "localhost" if ("localhost" in raw_base or "127.0.0.1" in raw_base) else (raw_base or "(not set)")
+    base_is_localhost = bool(raw_base and ("localhost" in raw_base or "127.0.0.1" in raw_base))
+
+    def _fail(code: str, msg: str) -> dict:
+        print(
+            f"Welcome email failed for {masked} | code={code} | reason={msg} | "
+            f"has_api_key={has_key} | has_from_email={has_from} | has_reply_to={has_reply_to} | "
+            f"base_url={base_log} | base_is_localhost={base_is_localhost}"
+        )
+        return {"ok": False, "status": "failed", "resend_id": None, "error_code": code, "error_message": msg}
+
+    if not resend_key:
+        return _fail("missing_env_RESEND_API_KEY", "RESEND_API_KEY is not configured")
+    if not from_email:
+        return _fail("missing_env_NEWSLETTER_FROM_EMAIL", "NEWSLETTER_FROM_EMAIL is not configured")
+    if not raw_base:
+        return _fail("missing_env_BASE_URL", "BASE_URL is not configured")
+    if base_is_localhost:
+        return _fail("invalid_BASE_URL_localhost", "BASE_URL is localhost — set to production Vercel URL")
     if not base_url:
-        return {"ok": False, "error": "BASE_URL not safe for live email"}
+        return _fail("invalid_BASE_URL_preview", "BASE_URL appears to be a Vercel preview URL, not production")
 
+    # ── build email ──────────────────────────────────────────────────────────
     html_body = (
         f"<h1>Welcome to PeopleOS Brief</h1>"
         f"<p>You're now subscribed to PeopleOS Brief — your daily executive intelligence briefing "
@@ -94,12 +125,29 @@ def _send_welcome_email(email: str) -> dict:
     )
     try:
         with urllib.request.urlopen(req, timeout=10) as resp:
-            return {"ok": True, "error": ""}
+            try:
+                resp_body = json.loads(resp.read())
+                resend_id = resp_body.get("id", "")
+            except Exception:
+                resend_id = ""
+            print(f"Welcome email sent for {masked} | resend_id={resend_id} | from={from_email}")
+            return {"ok": True, "status": "sent", "resend_id": resend_id, "error_code": None, "error_message": None}
     except urllib.error.HTTPError as exc:
         body = read_error_body(exc, 200)
-        return {"ok": False, "error": body[:200]}
+        code = f"resend_{exc.code}"
+        print(
+            f"Welcome email failed for {masked} | code={code} | http_status={exc.code} | "
+            f"resend_response={body[:120]} | from={from_email} | "
+            f"has_api_key={has_key} | base_url={base_log}"
+        )
+        return {"ok": False, "status": "failed", "resend_id": None, "error_code": code, "error_message": body[:200]}
     except Exception as exc:
-        return {"ok": False, "error": str(exc)[:200]}
+        code = f"exception_{type(exc).__name__}"
+        print(
+            f"Welcome email failed for {masked} | code={code} | exception={type(exc).__name__} | "
+            f"has_api_key={has_key} | base_url={base_log}"
+        )
+        return {"ok": False, "status": "failed", "resend_id": None, "error_code": code, "error_message": str(exc)[:200]}
 
 
 class handler(BaseHTTPRequestHandler):
@@ -165,15 +213,10 @@ class handler(BaseHTTPRequestHandler):
                 print(f"Subscriber status: reactivated ({_mask_email(email)})")
                 welcome = _send_welcome_email(email)
                 welcome_status = "sent" if welcome["ok"] else "failed"
-                if not welcome["ok"]:
-                    print(f"Welcome email: failed — {welcome['error'][:80]}")
-                else:
-                    print(f"Welcome email: sent")
-                self._json({
-                    "ok": True,
-                    "status": "reactivated",
-                    "welcome_email": welcome_status,
-                })
+                resp: dict = {"ok": True, "status": "reactivated", "welcome_email": welcome_status}
+                if not welcome["ok"] and welcome.get("error_code"):
+                    resp["welcome_error_code"] = welcome["error_code"]
+                self._json(resp)
                 return
 
             # New subscriber
@@ -194,15 +237,10 @@ class handler(BaseHTTPRequestHandler):
             print(f"Subscriber status: new ({_mask_email(email)})")
             welcome = _send_welcome_email(email)
             welcome_status = "sent" if welcome["ok"] else "failed"
-            if not welcome["ok"]:
-                print(f"Welcome email: failed — {welcome['error'][:80]}")
-            else:
-                print(f"Welcome email: sent")
-            self._json({
-                "ok": True,
-                "status": "subscribed",
-                "welcome_email": welcome_status,
-            })
+            resp = {"ok": True, "status": "subscribed", "welcome_email": welcome_status}
+            if not welcome["ok"] and welcome.get("error_code"):
+                resp["welcome_error_code"] = welcome["error_code"]
+            self._json(resp)
         except urllib.error.HTTPError as exc:
             detail = read_error_body(exc, 500)
             lower = detail.lower()

@@ -1,0 +1,28 @@
+{
+  "last_generate": {
+    "event_name": "none",
+    "run_id": "not_yet_run",
+    "issue_date": null,
+    "issue_file_exists": false,
+    "status": "not_yet_run",
+    "ist_time": null,
+    "utc_time": null
+  },
+  "last_retry": {
+    "event_name": "none",
+    "run_id": "not_yet_run",
+    "status": "not_yet_run",
+    "retry_needed": null,
+    "ist_time": null,
+    "utc_time": null
+  },
+  "last_send": {
+    "event_name": "none",
+    "run_id": "not_yet_run",
+    "issue_date": null,
+    "status": "not_yet_run",
+    "ist_time": null,
+    "utc_time": null,
+    "send_live": null
+  }
+}

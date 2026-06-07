@@ -220,8 +220,12 @@ def _run_generate_today(force: bool = False) -> None:
 
     issue = _generate_issue(date, dry_run=False, force=force, save=True)
     if issue:
-        total = issue.get("total_dashboard_items", 0)
+        total   = issue.get("total_dashboard_items", 0)
+        secs    = issue.get("total_sections", 0)
+        email_i = issue.get("total_email_items", 0)
         log.info(f"Generated and saved: {date} ({total} dashboard items)")
+        # Machine-parseable line for workflow summary parsing
+        print(f"STATS: sections={secs} dashboard_items={total} email_items={email_i} issue_date={date}")
     else:
         log.error("Generation failed")
         sys.exit(1)
@@ -829,6 +833,8 @@ def _run_send_live_today(force_resend: bool = False) -> None:
     print(f"  db_logged        : {db_logged_count}")
     print(f"  skipped          : {skipped}")
     print(f"  failed           : {failed}")
+    # Machine-parseable line for workflow summary parsing
+    print(f"STATS: subscribers={len(subscribers)} accepted={sent} db_logged={db_logged_count} skipped={skipped} failed={failed}")
 
     if sent > 0 or skipped > 0:
         try:
@@ -914,29 +920,58 @@ def _run_test_email(email: str) -> None:
     _run_test(email)
 
 
-def _run_test_welcome_email(email: str) -> None:
-    """Send one welcome email to the supplied address. No DB write."""
-    from newsletter import config
+def _run_test_welcome_email(email: str, dry_run: bool = False) -> None:
+    """Send one welcome email to the supplied address. No DB write.
+    With dry_run=True: validates config and prints what would be sent, but does NOT call Resend.
+    """
     from newsletter.sender import send_welcome_email
     from newsletter.utils import is_valid_email
+    import os as _os
 
     if not is_valid_email(email):
         print(f"ERROR: Invalid email: {email}", file=sys.stderr)
         sys.exit(1)
 
-    config.validate_config(["RESEND_API_KEY", "NEWSLETTER_FROM_EMAIL", "BASE_URL"])
-    try:
-        base_url = _safe_base_url()
-    except RuntimeError as exc:
-        print(f"[FAIL] {exc}")
-        sys.exit(1)
+    masked = _mask_email(email)
 
-    print(f"Sending welcome email to {_mask_email(email)} ...")
-    result = send_welcome_email(email, base_url)
+    # Print env config status before attempting send
+    resend_key     = _os.environ.get("RESEND_API_KEY", "").strip()
+    from_email_val = _os.environ.get("NEWSLETTER_FROM_EMAIL", "").strip()
+    reply_to_val   = _os.environ.get("NEWSLETTER_REPLY_TO", "").strip()
+    raw_base       = _os.environ.get("BASE_URL", "").strip()
+    base_is_local  = bool(raw_base and ("localhost" in raw_base or "127.0.0.1" in raw_base))
+
+    print(f"=== Welcome Email Config ===")
+    print(f"  recipient            : {masked}")
+    print(f"  has_api_key          : {bool(resend_key)}")
+    print(f"  has_from_email       : {bool(from_email_val)}")
+    print(f"  has_reply_to         : {bool(reply_to_val)}")
+    print(f"  base_url             : {'localhost' if base_is_local else (raw_base or '(not set)')}")
+    print(f"  base_is_localhost    : {base_is_local}")
+    print(f"  dry_run              : {dry_run}")
+    print(f"===========================")
+
+    if dry_run:
+        result = send_welcome_email(email, dry_run=True)
+        if result["ok"]:
+            print(f"[DRY RUN OK] Config valid. Would send welcome email to {masked}")
+        else:
+            print(f"[FAIL] code={result.get('error_code','unknown')}")
+            print(f"       reason={result.get('error_message','')}")
+            sys.exit(1)
+        return
+
+    print(f"Sending welcome email to {masked} ...")
+    result = send_welcome_email(email)
     if result["ok"]:
-        print(f"[OK] Welcome email accepted by Resend. message_id: {result.get('message_id','')}")
+        resend_id = result.get("resend_id") or ""
+        print(f"[OK] Welcome email accepted by Resend")
+        print(f"     recipient={masked}")
+        print(f"     resend_id={resend_id}")
     else:
-        print(f"[FAIL] Welcome email failed: {result.get('error','')}")
+        print(f"[FAIL] Welcome email failed")
+        print(f"       code={result.get('error_code','unknown')}")
+        print(f"       reason={result.get('error_message','')}")
         sys.exit(1)
 
 
@@ -974,6 +1009,7 @@ def main() -> None:
     parser.add_argument("--admin-force", action="store_true", help="Skip in_progress guard in --ensure-today.")
     parser.add_argument("--error-msg", metavar="MSG", default="", help="Error message for --mark-generation-failed.")
     parser.add_argument("--force-resend", action="store_true", help="Bypass duplicate-send guard in --send-live-today.")
+    parser.add_argument("--validate-only", action="store_true", help="With --test-welcome-email: validate config only, do NOT call Resend.")
 
     args = parser.parse_args()
 
@@ -1014,7 +1050,7 @@ def main() -> None:
     elif args.test_email:
         _run_test_email(args.test_email)
     elif args.test_welcome_email:
-        _run_test_welcome_email(args.test_welcome_email)
+        _run_test_welcome_email(args.test_welcome_email, dry_run=args.validate_only)
 
 
 if __name__ == "__main__":
