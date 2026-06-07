@@ -765,19 +765,27 @@ def _run_send_live_today(force_resend: bool = False) -> None:
         log.error(f"Issue date mismatch: issue has {issue.get('issue_date')}, expected {date}. Aborting.")
         sys.exit(1)
 
-    # Render and save to DB
+    # Get real UUID from DB — required for send_log (UUID column)
+    from newsletter import archive as arc
+    from newsletter.renderer import render_html_email, render_text_email
+    placeholder = f"{base_url}/api/unsubscribe?token=PLACEHOLDER"
+    html = render_html_email(issue, placeholder, base_url)
+    text = render_text_email(issue, placeholder, base_url)
+
+    issue_slug = f"static-{date}"
     try:
-        from newsletter import archive as arc
-        from newsletter.renderer import render_html_email, render_text_email
-        placeholder = f"{base_url}/api/unsubscribe?token=PLACEHOLDER"
-        html = render_html_email(issue, placeholder, base_url)
-        text = render_text_email(issue, placeholder, base_url)
-        db_issue = arc.save_issue(issue, html, text)
-        issue_id = db_issue["id"]
-        print(f"  DB issue_id               : {issue_id}")
+        db_issue_id = arc.ensure_newsletter_issue(issue, html, text)
     except Exception as exc:
-        log.warning(f"DB save skipped: {exc}")
-        issue_id = f"static-{date}"
+        print(f"[FAIL] Cannot get DB issue UUID for {date}: {exc}")
+        print(f"  send_log requires real UUID — cannot use {issue_slug}. Aborting.")
+        sys.exit(1)
+
+    print(f"  Issue date                : {date}")
+    print(f"  Static issue slug         : {issue_slug}")
+    print(f"  DB issue UUID             : {db_issue_id}")
+    print(f"  Duplicate check uses UUID : yes")
+
+    issue_id = db_issue_id  # always a real UUID from here
 
     set_status("complete", email_date=date, email_status="sending")
 

@@ -2,7 +2,16 @@
 from __future__ import annotations
 
 import uuid
+from uuid import UUID
 from typing import Any
+
+
+def _assert_uuid(value: str, field: str = "issue_id") -> None:
+    """Fail fast with a clear local error before Postgres throws 22P02."""
+    try:
+        UUID(str(value))
+    except Exception:
+        raise ValueError(f"{field} must be a valid UUID, got: {value!r}")
 
 from supabase import create_client, Client
 
@@ -81,6 +90,8 @@ def unsubscribe_by_token(token: str) -> bool:
 
 def already_sent(issue_id: str, subscriber_id: str) -> bool:
     """Check if issue already sent to subscriber (application-level guard)."""
+    _assert_uuid(issue_id, "issue_id")
+    _assert_uuid(subscriber_id, "subscriber_id")
     client = _client()
     result = (
         client.table("send_log")
@@ -122,6 +133,7 @@ def log_send(
     send_type: str = "live",
 ) -> None:
     """Write send result to send_log. On conflict (duplicate), ignore."""
+    _assert_uuid(issue_id, "issue_id")
     client = _client()
     payload: dict[str, Any] = {
         "issue_id": issue_id,

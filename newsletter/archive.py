@@ -71,6 +71,7 @@ def save_issue(issue: dict[str, Any], html: str, text: str) -> dict[str, Any]:
     """
     Save structured issue to DB. Includes sections JSONB, html, text.
     Raises on duplicate issue_date (unique constraint).
+    Does NOT include executive_summary — column not in newsletter_issues schema.
     """
     client = _client()
     payload = {
@@ -81,7 +82,6 @@ def save_issue(issue: dict[str, Any], html: str, text: str) -> dict[str, Any]:
         "text": text,
         "sections": issue.get("sections", []),
         "sources": _extract_sources(issue),
-        "executive_summary": issue.get("executive_summary", ""),
     }
     result = client.table("newsletter_issues").insert(payload).execute()
     data = result.data
@@ -89,6 +89,45 @@ def save_issue(issue: dict[str, Any], html: str, text: str) -> dict[str, Any]:
         log.info(f"Issue saved for {issue['issue_date']}")
         return data[0]
     raise RuntimeError(f"Failed to save issue for {issue['issue_date']}")
+
+
+def ensure_newsletter_issue(issue: dict[str, Any], html: str, text: str) -> str:
+    """
+    Get or create newsletter_issues row. Always returns a real UUID string.
+    Handles duplicate issue_date gracefully (select-then-insert pattern).
+    Raises RuntimeError only if UUID cannot be obtained after all attempts.
+    """
+    issue_date = issue["issue_date"]
+
+    existing = get_issue_by_date(issue_date)
+    if existing:
+        log.info(f"DB issue row found: {existing['id']}")
+        return existing["id"]
+
+    client = _client()
+    payload = {
+        "issue_date": issue_date,
+        "subject": issue.get("subject", ""),
+        "preheader": issue.get("preheader", ""),
+        "html": html,
+        "text": text,
+        "sections": issue.get("sections", []),
+        "sources": _extract_sources(issue),
+    }
+    try:
+        result = client.table("newsletter_issues").insert(payload).execute()
+        data = result.data
+        if data:
+            log.info(f"DB issue row created: {data[0]['id']}")
+            return data[0]["id"]
+    except Exception as exc:
+        log.warning(f"DB insert failed for {issue_date}: {exc} — retrying fetch")
+        existing = get_issue_by_date(issue_date)
+        if existing:
+            log.info(f"DB issue row found after retry: {existing['id']}")
+            return existing["id"]
+
+    raise RuntimeError(f"Could not get or create newsletter_issues row for {issue_date}")
 
 
 def _extract_sources(issue: dict) -> list[dict]:
