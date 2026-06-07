@@ -55,7 +55,7 @@
 
   async function fetchDates() {
     try {
-      const r = await fetch('/data/dates.json');
+      const r = await fetch(`/data/dates.json?v=${Date.now()}`);
       if (!r.ok) return [];
       const d = await r.json();
       return d.dates || [];
@@ -64,7 +64,7 @@
 
   async function fetchIssue(date) {
     try {
-      const r = await fetch(`/data/issues/${date}.json`);
+      const r = await fetch(`/data/issues/${date}.json?v=${Date.now()}`);
       if (!r.ok) return null;
       return await r.json();
     } catch { return null; }

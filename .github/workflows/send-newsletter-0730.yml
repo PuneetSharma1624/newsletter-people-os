@@ -6,9 +6,15 @@ on:
   workflow_dispatch:
     inputs:
       send_live:
-        description: "Send live newsletter? Must be 'true' to actually send."
+        description: "Actually send the newsletter to subscribers"
         required: true
-        default: "false"
+        default: false
+        type: boolean
+      force_resend:
+        description: "Allow resend even if status says already sent today"
+        required: false
+        default: false
+        type: boolean
 
 concurrency:
   group: peopleos-daily-send
@@ -78,39 +84,56 @@ jobs:
           print(f'Environment OK — {keys} Groq key(s) active')
           "
 
+      - name: Explain send mode
+        run: |
+          echo "======================================"
+          echo "event_name   : ${{ github.event_name }}"
+          echo "send_live    : ${{ inputs.send_live }}"
+          echo "force_resend : ${{ inputs.force_resend }}"
+          echo "Scheduled runs send live automatically."
+          echo "Manual runs send live only when send_live=true."
+          echo "======================================"
+
       - name: "Log: status before send"
         run: |
           echo "--- status.json ---"
           cat landing/data/status.json 2>/dev/null || echo "(not found)"
 
-      - name: Wait for today's issue to be ready
+      - name: Wait for local issue to be ready
         shell: bash
         run: |
           for i in {1..15}; do
-            echo "Checking today's issue readiness — attempt $i/15..."
+            echo "Checking local issue readiness — attempt $i/15..."
             git pull origin main --quiet
             if python newsletter/main.py --check-today; then
-              echo "Today's issue is ready."
+              echo "Local issue is ready."
               exit 0
             fi
-            echo "Today's issue is not ready yet. Waiting 60 seconds..."
+            echo "Not ready yet. Waiting 60 seconds..."
             sleep 60
           done
-          echo "Today's issue is still missing or incomplete after 15 minutes."
+          echo "Local issue still missing or incomplete after 15 minutes."
           exit 1
 
-      - name: "Send live (scheduled — auto-send)"
-        if: github.event_name == 'schedule'
-        run: python newsletter/main.py --send-live-today
+      - name: Wait for Vercel production issue readiness
+        if: github.event_name == 'schedule' || inputs.send_live == true || inputs.send_live == 'true'
+        run: python newsletter/main.py --wait-production-today
 
-      - name: "Send live (manual — send_live=true)"
-        if: github.event_name == 'workflow_dispatch' && inputs.send_live == 'true'
-        run: python newsletter/main.py --send-live-today
+      - name: "Send live newsletter"
+        if: github.event_name == 'schedule' || inputs.send_live == true || inputs.send_live == 'true'
+        shell: bash
+        run: |
+          if [ "${{ inputs.force_resend }}" = "true" ]; then
+            python newsletter/main.py --send-live-today --force-resend
+          else
+            python newsletter/main.py --send-live-today
+          fi
 
       - name: "Dry check only (manual — send_live not true)"
-        if: github.event_name == 'workflow_dispatch' && inputs.send_live != 'true'
+        if: github.event_name == 'workflow_dispatch' && inputs.send_live != true && inputs.send_live != 'true'
         run: |
-          echo "Manual trigger without send_live=true. Only validating — no email sent."
+          echo "Manual dry check only. No email was sent."
+          echo "To send live, rerun workflow with send_live=true."
           python newsletter/main.py --check-today
 
       - name: "Log: final status"

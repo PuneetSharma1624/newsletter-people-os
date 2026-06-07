@@ -592,7 +592,83 @@ def _run_ensure_today(admin_force: bool = False) -> None:
         sys.exit(1)
 
 
-def _run_send_live_today() -> None:
+def _mask_email(email: str) -> str:
+    if not email or "@" not in email:
+        return "***"
+    local, domain = email.split("@", 1)
+    return f"{local[0]}***@{domain}"
+
+
+def _safe_base_url() -> str:
+    from newsletter import config as cfg
+    base_url = cfg.base_url()
+    if not base_url:
+        raise RuntimeError("BASE_URL is not configured")
+    if "localhost" in base_url or "127.0.0.1" in base_url:
+        raise RuntimeError(f"BASE_URL is localhost — not valid for production: {base_url}")
+    if "vercel.app" in base_url and ("git-" in base_url or "-pr-" in base_url):
+        raise RuntimeError(f"BASE_URL appears to be a Vercel preview URL: {base_url}")
+    return base_url
+
+
+def _run_wait_production_today() -> None:
+    """Poll BASE_URL/data/issues/YYYY-MM-DD.json until ready. Up to 15 min."""
+    from newsletter.static_publisher import check_production_issue_available
+
+    date = _today()
+    try:
+        base_url = _safe_base_url()
+    except RuntimeError as exc:
+        print(f"[FAIL] {exc}")
+        sys.exit(1)
+
+    url = f"{base_url}/data/issues/{date}.json"
+    print(f"=== Wait Production Today: {date} ===")
+    print(f"Polling: {url}")
+
+    for i in range(1, 16):
+        print(f"  Attempt {i}/15 ...")
+        result = check_production_issue_available(date)
+        if result["ok"]:
+            print(f"[OK] Production ready — {result.get('sections',0)} sections, {result.get('dashboard_items',0)} dashboard items")
+            sys.exit(0)
+        print(f"  Not ready: {result['errors']}")
+        if i < 15:
+            print("  Waiting 60 seconds...")
+            time.sleep(60)
+
+    print(f"[FAIL] Production issue not available after 15 attempts.")
+    sys.exit(1)
+
+
+def _run_debug_subscribers() -> None:
+    """Connect to Supabase, count active subscribers, print masked sample. No email sent."""
+    from newsletter import config as cfg
+    from newsletter.subscribers import get_active_subscribers
+
+    print("=== Debug Subscribers ===")
+    url = os.getenv("SUPABASE_URL", "")
+    print(f"  SUPABASE_URL configured   : {'yes' if url else 'NO — missing'}")
+    print(f"  SUPABASE_SERVICE_ROLE_KEY : {'yes' if os.getenv('SUPABASE_SERVICE_ROLE_KEY') else 'NO — missing'}")
+
+    try:
+        subs = get_active_subscribers()
+    except Exception as exc:
+        print(f"[FAIL] Subscriber fetch failed: {exc}")
+        sys.exit(1)
+
+    print(f"  Active subscriber count   : {len(subs)}")
+    for sub in subs[:3]:
+        print(f"    {_mask_email(sub.get('email', ''))}")
+
+    if not subs:
+        print("[FAIL] No active subscribers found.")
+        sys.exit(1)
+
+    print("[OK] Subscribers reachable.")
+
+
+def _run_send_live_today(force_resend: bool = False) -> None:
     from newsletter import config
     from newsletter.logger import log, log_mode, log_subscribers, log_summary
     from newsletter.sender import send_to_subscriber
@@ -608,33 +684,52 @@ def _run_send_live_today() -> None:
 
     date = _today()
     print(f"=== Send Live Today: {date} ===")
+    print(f"  force_resend              : {force_resend}")
 
-    # Validate issue completeness
+    # Print safe config summary
+    base_url_raw = os.getenv("BASE_URL", "")
+    from_email = os.getenv("NEWSLETTER_FROM_EMAIL", "")
+    from_domain = from_email.split("@")[-1] if "@" in from_email else "(not set)"
+    print(f"  BASE_URL configured       : {'yes — ' + base_url_raw if base_url_raw else 'NO'}")
+    print(f"  SUPABASE_URL configured   : {'yes' if os.getenv('SUPABASE_URL') else 'NO'}")
+    print(f"  RESEND_API_KEY configured : {'yes' if os.getenv('RESEND_API_KEY') else 'NO'}")
+    print(f"  FROM_EMAIL domain         : {from_domain}")
+
+    # Validate BASE_URL
+    try:
+        base_url = _safe_base_url()
+    except RuntimeError as exc:
+        print(f"[FAIL] {exc}")
+        sys.exit(1)
+
+    dashboard_url = f"{base_url}/"
+    issue_url = f"{base_url}/brief?date={date}"
+    print(f"  Dashboard URL             : {dashboard_url}")
+    print(f"  Issue URL                 : {issue_url}")
+
+    # Validate local issue completeness
     result = validate_issue_complete(date)
+    print(f"  Local issue complete      : {'yes' if result['ok'] else 'NO'}")
     if not result["ok"]:
         print(f"[FAIL] Today's issue ({date}) is NOT complete. Aborting send.")
         for e in result["errors"]:
             print(f"  - {e}")
-        set_status(
-            "complete",  # generation might be complete; just update email status
-            email_status="skipped_issue_missing",
-        )
+        set_status("complete", email_status="skipped_issue_missing")
         sys.exit(1)
 
     # Check production availability (with retries)
-    max_retries = 5
-    wait_seconds = 120
+    max_retries = 3
+    wait_seconds = 60
     prod_ok = False
     for attempt in range(1, max_retries + 1):
         prod = check_production_issue_available(date)
         if prod["ok"]:
             prod_ok = True
-            print(f"[OK] Production issue available: {prod['url']}")
+            print(f"  Production URL ready      : yes — {prod['url']}")
             break
         print(f"  Production check {attempt}/{max_retries} failed: {prod['errors']}")
         if attempt < max_retries:
             print(f"  Waiting {wait_seconds}s before retry...")
-            import time
             time.sleep(wait_seconds)
 
     if not prod_ok:
@@ -642,25 +737,30 @@ def _run_send_live_today() -> None:
         set_status("complete", email_status="skipped_issue_not_deployed")
         sys.exit(1)
 
-    # Check duplicate send guard
-    if already_sent_today(date):
-        print(f"Today's newsletter already sent. Skipping.")
+    # Duplicate send guard
+    if not force_resend and already_sent_today(date):
+        print(f"[SKIP] Today's newsletter already sent (found in send_log). Use --force-resend to override.")
         sys.exit(0)
+    if force_resend:
+        print(f"  force_resend=True — bypassing duplicate-send guard.")
 
-    # Supabase preflight + fetch subscribers
+    # Fetch subscribers
     subscribers = _supabase_preflight()
     log_subscribers(len(subscribers))
+    print(f"  Subscriber count          : {len(subscribers)}")
+    for sub in subscribers[:3]:
+        print(f"    {_mask_email(sub.get('email', ''))}")
+
     if not subscribers:
-        log.warning("No active subscribers. Exiting.")
-        set_status("complete", email_status="skipped_already_sent")
-        return
+        print("[FAIL] No active subscribers found. Live newsletter was not sent.")
+        set_status("complete", email_status="failed_no_subscribers")
+        sys.exit(1)
 
     issue = load_issue(date)
     if not issue:
         log.error("Failed to load issue")
         sys.exit(1)
 
-    # Ensure issue_date in issue is today
     if issue.get("issue_date") != date:
         log.error(f"Issue date mismatch: issue has {issue.get('issue_date')}, expected {date}. Aborting.")
         sys.exit(1)
@@ -669,15 +769,17 @@ def _run_send_live_today() -> None:
     try:
         from newsletter import archive as arc
         from newsletter.renderer import render_html_email, render_text_email
-        base_url = config.base_url()
         placeholder = f"{base_url}/api/unsubscribe?token=PLACEHOLDER"
         html = render_html_email(issue, placeholder, base_url)
         text = render_text_email(issue, placeholder, base_url)
         db_issue = arc.save_issue(issue, html, text)
         issue_id = db_issue["id"]
+        print(f"  DB issue_id               : {issue_id}")
     except Exception as exc:
         log.warning(f"DB save skipped: {exc}")
         issue_id = f"static-{date}"
+
+    set_status("complete", email_date=date, email_status="sending")
 
     sent = failed = skipped = 0
     utc_now = datetime.datetime.now(datetime.timezone.utc).isoformat().replace("+00:00", "Z")
@@ -688,10 +790,15 @@ def _run_send_live_today() -> None:
             skipped += 1
         elif result2["ok"]:
             sent += 1
+            msg_id = result2.get("message_id", "")
+            if msg_id:
+                print(f"  Resend accepted — message_id: {msg_id}")
         else:
             failed += 1
+            print(f"  [WARN] Send failed for subscriber: {result2.get('error','')}")
 
     log_summary(sent, failed, skipped)
+    print(f"  Sent: {sent}  Failed: {failed}  Skipped: {skipped}")
 
     if sent > 0 or skipped > 0:
         try:
@@ -704,6 +811,7 @@ def _run_send_live_today() -> None:
             email_status="sent",
             email_sent_at_utc=utc_now,
         )
+        print(f"Newsletter accepted by Resend.")
 
     if failed > 0 and sent == 0 and skipped == 0:
         set_status("complete", email_date=date, email_status="failed")
@@ -802,10 +910,13 @@ def main() -> None:
     group.add_argument("--mark-generation-failed", action="store_true", help="Write failed to status.json.")
     group.add_argument("--preflight", action="store_true", help="Check env vars and folder structure.")
     group.add_argument("--test-email", metavar="EMAIL", help="Send test email (alias for --test).")
+    group.add_argument("--wait-production-today", action="store_true", help="Poll BASE_URL until today's issue JSON is live. Exit 0=ready, 1=timeout.")
+    group.add_argument("--debug-subscribers", action="store_true", help="Count active subscribers and print masked sample. No email sent.")
 
     parser.add_argument("--force", action="store_true", help="Force operation even if issue already exists.")
     parser.add_argument("--admin-force", action="store_true", help="Skip in_progress guard in --ensure-today.")
     parser.add_argument("--error-msg", metavar="MSG", default="", help="Error message for --mark-generation-failed.")
+    parser.add_argument("--force-resend", action="store_true", help="Bypass duplicate-send guard in --send-live-today.")
 
     args = parser.parse_args()
 
@@ -832,7 +943,11 @@ def main() -> None:
     elif args.ensure_today:
         _run_ensure_today(admin_force=args.admin_force or args.force)
     elif args.send_live_today:
-        _run_send_live_today()
+        _run_send_live_today(force_resend=args.force_resend)
+    elif args.wait_production_today:
+        _run_wait_production_today()
+    elif args.debug_subscribers:
+        _run_debug_subscribers()
     elif args.mark_generation_started:
         _run_mark_generation_started()
     elif args.mark_generation_failed:
