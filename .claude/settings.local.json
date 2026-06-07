@@ -44,7 +44,10 @@
       "Bash(python newsletter/main.py --ensure-today)",
       "Bash(python -m py_compile newsletter/main.py)",
       "Bash(python newsletter/main.py --help)",
-      "Bash(python -m py_compile newsletter/main.py newsletter/sender.py newsletter/subscribers.py newsletter/archive.py)"
+      "Bash(python -m py_compile newsletter/main.py newsletter/sender.py newsletter/subscribers.py newsletter/archive.py)",
+      "Bash(python -m py_compile newsletter/archive.py newsletter/main.py newsletter/sender.py newsletter/subscribers.py api/subscribe.py)",
+      "Bash(python -m compileall api newsletter -q)",
+      "Bash(python newsletter/main.py --test-welcome-email test@example.com --validate-only)"
     ]
   }
 }
