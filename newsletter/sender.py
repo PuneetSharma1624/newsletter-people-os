@@ -89,9 +89,10 @@ def send_to_subscriber(
         preheader=issue.get("preheader", ""),
     )
 
+    db_logged = False
     if not is_test and subscriber_id:
         status = "sent" if result["ok"] else "failed"
-        log_send(
+        db_logged = log_send(
             issue_id=issue_id,
             subscriber_id=subscriber_id,
             email=email,
@@ -103,7 +104,38 @@ def send_to_subscriber(
         )
 
     result["skipped"] = False
+    result["db_logged"] = db_logged
     return result
+
+
+def send_welcome_email(email: str, base_url: str = "") -> dict[str, Any]:
+    """Send welcome email to a new/reactivated subscriber. Never raises."""
+    config.validate_config(["RESEND_API_KEY", "NEWSLETTER_FROM_EMAIL"])
+    if not base_url:
+        base_url = config.base_url()
+
+    html = f"""<h1>Welcome to PeopleOS Brief</h1>
+<p>You're now subscribed to PeopleOS Brief — your daily executive intelligence briefing across markets, AI, HR, economics, and major updates.</p>
+<p>Every morning, you'll receive a concise digest designed to help you catch the signal without scanning the noise.</p>
+<p><a href="{base_url}">Open PeopleOS Brief</a></p>
+<p style="color:#666;font-size:12px;">You are receiving this because you subscribed to PeopleOS Brief.</p>"""
+
+    text = f"""Welcome to PeopleOS Brief.
+
+You're now subscribed to PeopleOS Brief — your daily executive intelligence briefing across markets, AI, HR, economics, and major updates.
+
+Open PeopleOS Brief:
+{base_url}
+
+You are receiving this because you subscribed to PeopleOS Brief."""
+
+    return send_email(
+        to_email=email,
+        subject="Welcome to PeopleOS Brief",
+        html=html,
+        text=text,
+        unsubscribe_url=f"{base_url}/api/unsubscribe",
+    )
 
 
 def send_test_email(test_email: str, issue: dict) -> dict[str, Any]:

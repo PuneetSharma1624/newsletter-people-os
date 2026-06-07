@@ -91,8 +91,17 @@
 
       const data = await res.json().catch(() => null);
       if (data && data.ok) {
-        const status = data.status === 'already_subscribed' ? 'You are already subscribed.' : "You're subscribed!";
-        showMessage(data.message || status, 'success');
+        let msg;
+        if (data.status === 'already_subscribed') {
+          msg = "You're already subscribed to PeopleOS Brief.";
+        } else if (data.status === 'reactivated') {
+          msg = "You're subscribed. Welcome to PeopleOS Brief.";
+        } else if (data.welcome_email === 'failed') {
+          msg = "You're subscribed. Welcome email may arrive shortly.";
+        } else {
+          msg = "You're subscribed. Welcome to PeopleOS Brief.";
+        }
+        showMessage(data.message || msg, 'success');
         emailInput.value = '';
         if (btnText) btnText.textContent = 'Subscribed';
         await loadReaderCount();

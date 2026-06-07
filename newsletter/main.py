@@ -334,19 +334,19 @@ def _run_live() -> None:
         log.error("Failed to load issue")
         sys.exit(1)
 
-    # Also try to get/create DB issue for send log
+    # Get real UUID from DB — required for send_log (UUID column)
+    from newsletter import archive as arc
+    from newsletter.renderer import render_html_email, render_text_email
+    base_url = config.base_url()
+    placeholder = f"{base_url}/api/unsubscribe?token=PLACEHOLDER"
+    html = render_html_email(issue, placeholder, base_url)
+    text = render_text_email(issue, placeholder, base_url)
     try:
-        from newsletter import archive as arc
-        from newsletter.renderer import render_html_email, render_text_email
-        base_url = config.base_url()
-        placeholder = f"{base_url}/api/unsubscribe?token=PLACEHOLDER"
-        html = render_html_email(issue, placeholder, base_url)
-        text = render_text_email(issue, placeholder, base_url)
-        db_issue = arc.save_issue(issue, html, text)
-        issue_id = db_issue["id"]
+        issue_id = arc.ensure_newsletter_issue(issue, html, text)
     except Exception as exc:
-        log.warning(f"DB save skipped (no Supabase?): {exc}")
-        issue_id = f"static-{date}"
+        log.error(f"Cannot get DB issue UUID for {date}: {exc}")
+        log.error("send_log requires real UUID. Aborting.")
+        sys.exit(1)
 
     sent = failed = skipped = 0
     for sub in subscribers:
@@ -787,26 +787,48 @@ def _run_send_live_today(force_resend: bool = False) -> None:
 
     issue_id = db_issue_id  # always a real UUID from here
 
+    # Pre-flight: verify send_log is reachable before starting batch
+    from newsletter.subscribers import probe_send_log
+    try:
+        probe_send_log()
+        print(f"  send_log reachable        : yes")
+    except Exception as exc:
+        print(f"[FAIL] send_log table not reachable: {exc}")
+        print(f"  Cannot safely check for duplicates — aborting to prevent spam.")
+        sys.exit(1)
+
     set_status("complete", email_date=date, email_status="sending")
 
-    sent = failed = skipped = 0
+    sent = failed = skipped = db_logged_count = 0
     utc_now = datetime.datetime.now(datetime.timezone.utc).isoformat().replace("+00:00", "Z")
 
-    for sub in subscribers:
+    for i, sub in enumerate(subscribers, 1):
+        masked = _mask_email(sub.get("email", ""))
+        print(f"  [{i}/{len(subscribers)}] Sending to: {masked}")
         result2 = send_to_subscriber(sub, issue, issue_id, is_test=False)
         if result2.get("skipped"):
             skipped += 1
+            print(f"    Duplicate check: already sent — skipped")
         elif result2["ok"]:
             sent += 1
             msg_id = result2.get("message_id", "")
-            if msg_id:
-                print(f"  Resend accepted — message_id: {msg_id}")
+            print(f"    Resend accepted: {msg_id or '(no id)'}")
+            if result2.get("db_logged"):
+                db_logged_count += 1
+                print(f"    DB send log: ok")
+            else:
+                print(f"    DB send log: [WARN] not logged")
         else:
             failed += 1
-            print(f"  [WARN] Send failed for subscriber: {result2.get('error','')}")
+            print(f"    [WARN] Send failed: {result2.get('error','')[:120]}")
 
     log_summary(sent, failed, skipped)
-    print(f"  Sent: {sent}  Failed: {failed}  Skipped: {skipped}")
+    print(f"\nFinal send summary:")
+    print(f"  attempted        : {len(subscribers)}")
+    print(f"  accepted_by_resend: {sent}")
+    print(f"  db_logged        : {db_logged_count}")
+    print(f"  skipped          : {skipped}")
+    print(f"  failed           : {failed}")
 
     if sent > 0 or skipped > 0:
         try:
@@ -892,6 +914,32 @@ def _run_test_email(email: str) -> None:
     _run_test(email)
 
 
+def _run_test_welcome_email(email: str) -> None:
+    """Send one welcome email to the supplied address. No DB write."""
+    from newsletter import config
+    from newsletter.sender import send_welcome_email
+    from newsletter.utils import is_valid_email
+
+    if not is_valid_email(email):
+        print(f"ERROR: Invalid email: {email}", file=sys.stderr)
+        sys.exit(1)
+
+    config.validate_config(["RESEND_API_KEY", "NEWSLETTER_FROM_EMAIL", "BASE_URL"])
+    try:
+        base_url = _safe_base_url()
+    except RuntimeError as exc:
+        print(f"[FAIL] {exc}")
+        sys.exit(1)
+
+    print(f"Sending welcome email to {_mask_email(email)} ...")
+    result = send_welcome_email(email, base_url)
+    if result["ok"]:
+        print(f"[OK] Welcome email accepted by Resend. message_id: {result.get('message_id','')}")
+    else:
+        print(f"[FAIL] Welcome email failed: {result.get('error','')}")
+        sys.exit(1)
+
+
 # ─── ARGPARSE ────────────────────────────────────────────────────────────────
 
 def main() -> None:
@@ -920,6 +968,7 @@ def main() -> None:
     group.add_argument("--test-email", metavar="EMAIL", help="Send test email (alias for --test).")
     group.add_argument("--wait-production-today", action="store_true", help="Poll BASE_URL until today's issue JSON is live. Exit 0=ready, 1=timeout.")
     group.add_argument("--debug-subscribers", action="store_true", help="Count active subscribers and print masked sample. No email sent.")
+    group.add_argument("--test-welcome-email", metavar="EMAIL", help="Send one welcome email to EMAIL. No DB write. For testing only.")
 
     parser.add_argument("--force", action="store_true", help="Force operation even if issue already exists.")
     parser.add_argument("--admin-force", action="store_true", help="Skip in_progress guard in --ensure-today.")
@@ -964,6 +1013,8 @@ def main() -> None:
         _run_preflight()
     elif args.test_email:
         _run_test_email(args.test_email)
+    elif args.test_welcome_email:
+        _run_test_welcome_email(args.test_welcome_email)
 
 
 if __name__ == "__main__":

@@ -88,6 +88,12 @@ def unsubscribe_by_token(token: str) -> bool:
     return bool(result.data)
 
 
+def probe_send_log() -> None:
+    """Verify send_log table is reachable. Raises if not. Used as pre-flight before batch send."""
+    client = _client()
+    client.table("send_log").select("id").limit(1).execute()
+
+
 def already_sent(issue_id: str, subscriber_id: str) -> bool:
     """Check if issue already sent to subscriber (application-level guard)."""
     _assert_uuid(issue_id, "issue_id")
@@ -122,6 +128,13 @@ def already_sent_today(issue_date: str) -> bool:
         return False
 
 
+def _mask_email(email: str) -> str:
+    if not email or "@" not in email:
+        return "***"
+    local, domain = email.split("@", 1)
+    return f"{local[0]}***@{domain}"
+
+
 def log_send(
     issue_id: str,
     subscriber_id: str,
@@ -131,8 +144,8 @@ def log_send(
     error_message: str = "",
     issue_date: str = "",
     send_type: str = "live",
-) -> None:
-    """Write send result to send_log. On conflict (duplicate), ignore."""
+) -> bool:
+    """Write send result to send_log. Returns True if logged successfully."""
     _assert_uuid(issue_id, "issue_id")
     client = _client()
     payload: dict[str, Any] = {
@@ -151,6 +164,23 @@ def log_send(
 
     try:
         client.table("send_log").insert(payload).execute()
+        return True
     except Exception as exc:
+        err = str(exc)
+        # If full payload fails due to missing optional columns, retry with minimal payload
+        if any(k in err.lower() for k in ("schema cache", "does not exist", "column", "42703")):
+            minimal: dict[str, Any] = {
+                "issue_id": issue_id,
+                "subscriber_id": subscriber_id,
+                "status": status,
+            }
+            try:
+                client.table("send_log").insert(minimal).execute()
+                log.warning(f"log_send used minimal payload for {_mask_email(email)} (schema mismatch: {err[:120]})")
+                return True
+            except Exception as exc2:
+                log.warning(f"log_send failed (minimal) for {_mask_email(email)}: {exc2}")
+                return False
         # Uniqueness violation = already logged. Safe to ignore.
-        log.warning(f"log_send conflict or error for {email}: {exc}")
+        log.warning(f"log_send conflict or error for {_mask_email(email)}: {err[:120]}")
+        return False

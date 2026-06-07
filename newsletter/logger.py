@@ -44,14 +44,20 @@ def log_subject(subject: str) -> None:
 def log_archive(status: str) -> None:
     log.info(f"Archive: {status}")
 
+def _mask_email(email: str) -> str:
+    if not email or "@" not in email:
+        return "***"
+    local, domain = email.split("@", 1)
+    return f"{local[0]}***@{domain}"
+
 def log_send_success(email: str, msg_id: str = "") -> None:
-    log.info(f"Sent OK → {email}" + (f" [{msg_id}]" if msg_id else ""))
+    log.info(f"Sent OK → {_mask_email(email)}" + (f" [{msg_id}]" if msg_id else ""))
 
 def log_send_failure(email: str, error: str) -> None:
-    log.error(f"Send FAILED → {email}: {error}")
+    log.error(f"Send FAILED → {_mask_email(email)}: {error}")
 
 def log_send_skipped(email: str, reason: str = "already sent") -> None:
-    log.info(f"Skipped → {email} ({reason})")
+    log.info(f"Skipped → {_mask_email(email)} ({reason})")
 
 def log_api_error(service: str, error: str) -> None:
     log.error(f"API error [{service}]: {error}")
