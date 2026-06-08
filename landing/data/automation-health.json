@@ -17,12 +17,12 @@
     "utc_time": "2026-06-08 07:13:54Z"
   },
   "last_send": {
-    "event_name": "workflow_dispatch",
-    "run_id": "27086504205",
-    "issue_date": "2026-06-07",
-    "status": "success",
-    "ist_time": "2026-06-07 13:16:47 IST",
-    "utc_time": "2026-06-07 07:46:47Z",
-    "send_live": "true"
+    "event_name": "schedule",
+    "run_id": "27121942699",
+    "issue_date": "2026-06-08",
+    "status": "failure",
+    "ist_time": "2026-06-08 12:46:20 IST",
+    "utc_time": "2026-06-08 07:16:20Z",
+    "send_live": "true (scheduled)"
   }
 }
