@@ -495,13 +495,87 @@ body{
   display:flex; align-items:center; overflow:hidden;
   background:var(--canvas-night);
 }
-.cosmic-bg,
+.cosmic-bg{ position:absolute; inset:0; z-index:0; pointer-events:none; }
+.cosmic-bg__base,
 .cosmic-glow,
 .cosmic-glow--left,
 .cosmic-glow--right,
 .cosmic-glow--warm,
-.cosmic-stars,
-.cosmic-grain{ display:none; }  /* remove all gradient/glow layers */
+.cosmic-grain{ display:none; }  /* no gradients, no glows */
+
+/* Faint star field — very subtle, mimics real space */
+.cosmic-stars{
+  display:block;
+  position:absolute; inset:0;
+  background-image:
+    radial-gradient(1px 1px at 4%  9%,  rgba(255,255,255,0.18) 0%, transparent 100%),
+    radial-gradient(1px 1px at 11% 3%,  rgba(255,255,255,0.13) 0%, transparent 100%),
+    radial-gradient(1px 1px at 18% 17%, rgba(255,255,255,0.20) 0%, transparent 100%),
+    radial-gradient(1px 1px at 26% 6%,  rgba(255,255,255,0.10) 0%, transparent 100%),
+    radial-gradient(1px 1px at 33% 22%, rgba(255,255,255,0.15) 0%, transparent 100%),
+    radial-gradient(1px 1px at 41% 11%, rgba(255,255,255,0.12) 0%, transparent 100%),
+    radial-gradient(1px 1px at 47% 28%, rgba(255,255,255,0.09) 0%, transparent 100%),
+    radial-gradient(1px 1px at 55% 4%,  rgba(255,255,255,0.17) 0%, transparent 100%),
+    radial-gradient(1px 1px at 62% 19%, rgba(255,255,255,0.11) 0%, transparent 100%),
+    radial-gradient(1px 1px at 69% 8%,  rgba(255,255,255,0.14) 0%, transparent 100%),
+    radial-gradient(1px 1px at 76% 31%, rgba(255,255,255,0.08) 0%, transparent 100%),
+    radial-gradient(1px 1px at 83% 14%, rgba(255,255,255,0.16) 0%, transparent 100%),
+    radial-gradient(1px 1px at 91% 5%,  rgba(255,255,255,0.19) 0%, transparent 100%),
+    radial-gradient(1px 1px at 97% 23%, rgba(255,255,255,0.10) 0%, transparent 100%),
+    radial-gradient(1px 1px at 7%  42%, rgba(255,255,255,0.12) 0%, transparent 100%),
+    radial-gradient(1px 1px at 15% 51%, rgba(255,255,255,0.08) 0%, transparent 100%),
+    radial-gradient(1px 1px at 23% 38%, rgba(255,255,255,0.14) 0%, transparent 100%),
+    radial-gradient(1px 1px at 31% 58%, rgba(255,255,255,0.09) 0%, transparent 100%),
+    radial-gradient(1px 1px at 39% 44%, rgba(255,255,255,0.11) 0%, transparent 100%),
+    radial-gradient(1px 1px at 50% 63%, rgba(255,255,255,0.07) 0%, transparent 100%),
+    radial-gradient(1px 1px at 58% 47%, rgba(255,255,255,0.13) 0%, transparent 100%),
+    radial-gradient(1px 1px at 67% 55%, rgba(255,255,255,0.08) 0%, transparent 100%),
+    radial-gradient(1px 1px at 74% 40%, rgba(255,255,255,0.15) 0%, transparent 100%),
+    radial-gradient(1px 1px at 82% 68%, rgba(255,255,255,0.06) 0%, transparent 100%),
+    radial-gradient(1px 1px at 89% 52%, rgba(255,255,255,0.10) 0%, transparent 100%),
+    radial-gradient(1px 1px at 94% 37%, rgba(255,255,255,0.12) 0%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 13% 72%, rgba(255,255,255,0.14) 0%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 28% 78%, rgba(255,255,255,0.09) 0%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 45% 82%, rgba(255,255,255,0.11) 0%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 60% 76%, rgba(255,255,255,0.07) 0%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 78% 85%, rgba(255,255,255,0.12) 0%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 92% 79%, rgba(255,255,255,0.09) 0%, transparent 100%),
+    radial-gradient(1px 1px at 3%  88%, rgba(255,255,255,0.08) 0%, transparent 100%),
+    radial-gradient(1px 1px at 20% 93%, rgba(255,255,255,0.06) 0%, transparent 100%),
+    radial-gradient(1px 1px at 37% 96%, rgba(255,255,255,0.10) 0%, transparent 100%),
+    radial-gradient(1px 1px at 55% 91%, rgba(255,255,255,0.07) 0%, transparent 100%),
+    radial-gradient(1px 1px at 72% 94%, rgba(255,255,255,0.09) 0%, transparent 100%),
+    radial-gradient(1px 1px at 88% 88%, rgba(255,255,255,0.11) 0%, transparent 100%);
+}
+
+/* Mars planet — floats in from top-right */
+.hero-mars{
+  position:absolute;
+  top:-60px;
+  right:-60px;
+  width:480px;
+  height:480px;
+  border-radius:50%;
+  pointer-events:none;
+  z-index:4;
+  animation: mars-float-in 1.6s cubic-bezier(0.16,1,0.3,1) forwards,
+             mars-drift 9s ease-in-out 1.6s infinite;
+  will-change: transform, opacity;
+}
+@keyframes mars-float-in{
+  from{ transform:translate(140px,-140px) scale(0.82); opacity:0; }
+  to  { transform:translate(0,0) scale(1); opacity:1; }
+}
+@keyframes mars-drift{
+  0%,100%{ transform:translate(0,0); }
+  50%    { transform:translate(-12px,16px); }
+}
+@media(max-width:960px){
+  .hero-mars{ width:320px; height:320px; top:-30px; right:-30px; }
+}
+@media(max-width:600px){
+  .hero-mars{ width:200px; height:200px; top:-20px; right:-20px; opacity:0.55; }
+}
 
 .hero-content{
   position:relative; z-index:10;
