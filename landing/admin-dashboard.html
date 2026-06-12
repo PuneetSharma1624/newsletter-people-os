@@ -5,47 +5,49 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Admin Dashboard — PeopleOS Brief</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/style.css" />
   <style>
     .admin-wrap{max-width:860px;margin:0 auto;padding:40px 24px 80px;}
-    .admin-header{margin-bottom:32px;padding-bottom:20px;border-bottom:1px solid var(--border);}
-    .admin-title{font-size:1.5rem;font-weight:800;color:var(--white);letter-spacing:-0.02em;}
-    .admin-sub{font-size:0.85rem;color:var(--text-muted);margin-top:4px;}
-    .logout-btn{float:right;background:transparent;border:1px solid var(--border);color:var(--text-dim);cursor:pointer;font-family:var(--font);font-size:0.8rem;padding:6px 14px;border-radius:6px;}
-    .logout-btn:hover{border-color:var(--accent);color:var(--accent);}
+    .admin-header{margin-bottom:32px;padding-bottom:20px;border-bottom:1px solid var(--hairline-on-dark);}
+    .admin-title{font-family:var(--font-display);font-size:var(--fs-display-lg);font-weight:var(--fw-bold);color:var(--on-primary);letter-spacing:0.96px;text-transform:uppercase;}
+    .admin-sub{font-family:var(--font-ui);font-size:var(--fs-micro-cap);font-weight:var(--fw-bold);color:var(--text-dim);text-transform:uppercase;letter-spacing:var(--ls-micro-cap);margin-top:4px;}
+    .logout-btn{float:right;background:transparent;border:1px solid var(--hairline-on-dark);color:var(--text-dim);cursor:pointer;font-family:var(--font-ui);font-size:var(--fs-micro-cap);font-weight:var(--fw-bold);letter-spacing:var(--ls-micro-cap);text-transform:uppercase;padding:6px 16px;border-radius:var(--r-pill);transition:border-color 120ms linear,color 120ms linear;}
+    .logout-btn:hover{border-color:var(--on-primary);color:var(--on-primary);}
 
     .status-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin-bottom:32px;}
-    .stat-card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:16px 18px;}
-    .stat-label{font-size:0.7rem;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px;}
-    .stat-value{font-size:1.1rem;font-weight:700;color:var(--white);}
-    .stat-value.ok{color:#22c55e;}
-    .stat-value.warn{color:#f59e0b;}
-    .stat-value.fail{color:var(--danger);}
+    .stat-card{background:transparent;border:1px solid var(--hairline-on-dark);border-radius:var(--r-xs);padding:16px 18px;}
+    .stat-label{font-family:var(--font-ui);font-size:var(--fs-micro-cap);font-weight:var(--fw-bold);color:var(--text-dim);text-transform:uppercase;letter-spacing:var(--ls-micro-cap);margin-bottom:6px;}
+    .stat-value{font-family:var(--font-display);font-size:18px;font-weight:var(--fw-bold);color:var(--on-primary);text-transform:uppercase;letter-spacing:0.5px;}
+    .stat-value.ok{color:var(--on-primary);}
+    .stat-value.warn{color:var(--on-primary-mute);}
+    .stat-value.fail{color:var(--on-primary-mute);}
 
-    .section-title{font-size:0.75rem;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:14px;}
+    .section-title{font-family:var(--font-ui);font-size:var(--fs-micro-cap);font-weight:var(--fw-bold);color:var(--text-dim);text-transform:uppercase;letter-spacing:var(--ls-micro-cap);margin-bottom:14px;}
     .btn-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin-bottom:32px;}
-    .action-btn{background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);cursor:pointer;font-family:var(--font);font-size:0.875rem;font-weight:600;padding:12px 16px;text-align:left;transition:all 0.15s;}
-    .action-btn:hover{border-color:var(--accent);color:var(--accent);}
-    .action-btn:disabled{opacity:0.5;cursor:not-allowed;}
-    .action-btn.danger:hover{border-color:var(--danger);color:var(--danger);}
+    .action-btn{background:transparent;border:1px solid var(--hairline-on-dark);border-radius:var(--r-xs);color:var(--text-muted);cursor:pointer;font-family:var(--font-ui);font-size:var(--fs-micro-cap);font-weight:var(--fw-bold);letter-spacing:var(--ls-micro-cap);text-transform:uppercase;padding:12px 16px;text-align:left;transition:border-color 120ms linear,color 120ms linear;}
+    .action-btn:hover{border-color:var(--on-primary);color:var(--on-primary);}
+    .action-btn:disabled{opacity:0.45;cursor:not-allowed;}
+    .action-btn.danger:hover{border-color:var(--on-primary);color:var(--on-primary);}
     .action-btn .btn-icon{margin-right:8px;}
 
-    .log-box{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:16px;font-family:'Courier New',monospace;font-size:0.8rem;color:#88c;max-height:280px;overflow-y:auto;white-space:pre-wrap;line-height:1.6;}
-    .log-line.ok{color:#22c55e;}
-    .log-line.err{color:var(--danger);}
-    .log-line.warn{color:#f59e0b;}
-    .log-line.info{color:#88aacc;}
+    .log-box{background:var(--canvas-night-soft);border:1px solid var(--hairline-on-dark);border-radius:var(--r-xs);padding:16px;font-family:'Courier New',monospace;font-size:12px;color:var(--text-muted);max-height:280px;overflow-y:auto;white-space:pre-wrap;line-height:1.6;}
+    .log-line.ok{color:var(--on-primary);}
+    .log-line.err{color:var(--on-primary-mute);}
+    .log-line.warn{color:var(--on-primary-mute);}
+    .log-line.info{color:var(--text-muted);}
 
-    .confirm-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.8);display:flex;align-items:center;justify-content:center;z-index:999;display:none;}
-    .confirm-box{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:28px;max-width:400px;width:90%;}
-    .confirm-box h3{color:var(--white);font-size:1.1rem;margin-bottom:8px;}
-    .confirm-box p{color:var(--text-muted);font-size:0.875rem;margin-bottom:20px;}
+    .confirm-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.9);display:flex;align-items:center;justify-content:center;z-index:999;display:none;}
+    .confirm-box{background:var(--canvas-night-soft);border:1px solid var(--hairline-on-dark);border-radius:var(--r-xs);padding:28px;max-width:400px;width:90%;}
+    .confirm-box h3{font-family:var(--font-display);color:var(--on-primary);font-size:18px;font-weight:var(--fw-bold);letter-spacing:0.96px;text-transform:uppercase;margin-bottom:8px;}
+    .confirm-box p{color:var(--text-muted);font-size:var(--fs-body-md);margin-bottom:20px;}
     .confirm-btns{display:flex;gap:10px;}
-    .confirm-ok{flex:1;background:var(--danger);border:none;border-radius:6px;color:var(--white);cursor:pointer;font-family:var(--font);font-weight:700;padding:10px;}
-    .confirm-cancel{flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--text-muted);cursor:pointer;font-family:var(--font);font-weight:600;padding:10px;}
+    .confirm-ok{flex:1;background:transparent;border:1px solid var(--on-primary);border-radius:var(--r-pill);color:var(--on-primary);cursor:pointer;font-family:var(--font-ui);font-weight:var(--fw-bold);font-size:var(--fs-button-cap);letter-spacing:var(--ls-button-cap);text-transform:uppercase;padding:10px;transition:background 120ms linear,color 120ms linear;}
+    .confirm-ok:hover{background:var(--on-primary);color:var(--ink);}
+    .confirm-cancel{flex:1;background:transparent;border:1px solid var(--hairline-on-dark);border-radius:var(--r-pill);color:var(--text-dim);cursor:pointer;font-family:var(--font-ui);font-weight:var(--fw-bold);font-size:var(--fs-button-cap);letter-spacing:var(--ls-button-cap);text-transform:uppercase;padding:10px;transition:border-color 120ms linear,color 120ms linear;}
+    .confirm-cancel:hover{border-color:var(--on-primary);color:var(--on-primary);}
 
-    .github-note{background:rgba(124,106,247,0.08);border:1px solid rgba(124,106,247,0.25);border-radius:8px;padding:14px;font-size:0.8rem;color:#9585ff;line-height:1.6;margin-bottom:24px;}
+    .github-note{background:transparent;border:1px solid var(--hairline-on-dark);border-radius:var(--r-xs);padding:14px;font-family:var(--font-ui);font-size:var(--fs-micro-cap);font-weight:var(--fw-bold);letter-spacing:var(--ls-micro-cap);text-transform:uppercase;color:var(--text-muted);line-height:1.6;margin-bottom:24px;}
   </style>
 </head>
 <body>

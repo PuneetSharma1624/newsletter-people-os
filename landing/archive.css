@@ -1,89 +1,134 @@
-/* PeopleOS Brief — Archive page styles */
+/* PeopleOS Brief — Archive page styles (Spasex design system) */
+
 .archive-main{
-  max-width:780px;margin:0 auto;padding:48px 32px 80px;
+  max-width:780px; margin:0 auto; padding:48px var(--space-xxl) 80px;
 }
 
 .archive-header{
-  margin-bottom:40px;padding-bottom:28px;
-  border-bottom:1px solid var(--border-subtle);
+  margin-bottom:40px; padding-bottom:28px;
+  border-bottom:1px solid var(--hairline-on-dark);
 }
 
 .archive-title{
-  font-size:1.9rem;font-weight:800;color:var(--white);
-  letter-spacing:-0.04em;margin-bottom:8px;
+  font-family:var(--font-display);
+  font-size:var(--fs-display-xl);
+  font-weight:var(--fw-bold);
+  color:var(--on-primary);
+  letter-spacing:var(--ls-display-xl);
+  text-transform:uppercase;
+  line-height:var(--lh-display-xl);
+  margin-bottom:8px;
 }
 
-.archive-sub{font-size:0.9rem;color:var(--text-muted);}
+.archive-sub{
+  font-size:var(--fs-body-md);
+  color:var(--text-muted);
+  line-height:1.6;
+}
 
 /* MONTH GROUP */
-.archive-month{margin-bottom:36px;}
+.archive-month{ margin-bottom:36px; }
 .month-label{
-  font-size:0.68rem;font-weight:700;color:var(--text-dim);
-  text-transform:uppercase;letter-spacing:.1em;margin-bottom:12px;
+  font-family:var(--font-ui);
+  font-size:var(--fs-micro-cap);
+  font-weight:var(--fw-bold);
+  color:var(--text-dim);
+  text-transform:uppercase;
+  letter-spacing:var(--ls-micro-cap);
+  margin-bottom:12px;
 }
 
 /* ISSUE ROW */
 .archive-issue{
-  display:flex;align-items:center;justify-content:space-between;
-  gap:16px;padding:18px 20px;
-  background:var(--bg-elevated);border:1px solid var(--border-subtle);
-  border-left:3px solid var(--accent-border);
-  border-radius:var(--radius-lg);margin-bottom:8px;
-  text-decoration:none;transition:all .15s;
+  display:flex; align-items:center; justify-content:space-between;
+  gap:16px; padding:18px 20px;
+  background:transparent;
+  border:1px solid var(--hairline-on-dark);
+  /* override dynamic border-left */
+  border-left:1px solid var(--hairline-on-dark) !important;
+  border-radius:var(--r-xs);
+  margin-bottom:8px;
+  text-decoration:none;
+  transition:border-color 120ms linear, background 120ms linear;
 }
 .archive-issue:hover{
-  border-color:var(--border-default);border-left-color:var(--accent);
-  background:var(--bg-card);
+  border-color:var(--on-primary) !important;
+  background:var(--canvas-night-soft);
 }
 
-.archive-issue-left{flex:1;min-width:0;}
+.archive-issue-left{ flex:1; min-width:0; }
 
 .archive-issue-date{
-  font-size:0.68rem;font-weight:700;color:var(--accent);
-  text-transform:uppercase;letter-spacing:.08em;margin-bottom:5px;
+  font-family:var(--font-ui);
+  font-size:var(--fs-micro-cap);
+  font-weight:var(--fw-bold);
+  color:var(--text-dim);
+  text-transform:uppercase;
+  letter-spacing:var(--ls-micro-cap);
+  margin-bottom:5px;
 }
 
 .archive-issue-subject{
-  font-size:0.9rem;font-weight:700;color:var(--white);
-  letter-spacing:-0.01em;
-  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  font-family:var(--font-display);
+  font-size:14px;
+  font-weight:var(--fw-bold);
+  color:var(--on-primary);
+  letter-spacing:0.5px;
+  text-transform:uppercase;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
   margin-bottom:4px;
 }
 
 .archive-demo-pill{
-  display:inline-flex;align-items:center;
-  margin-left:8px;padding:2px 7px;border-radius:999px;
-  border:1px solid rgba(245,158,11,0.28);
-  background:rgba(245,158,11,0.1);
-  color:#fbbf24;font-size:0.62rem;font-weight:700;
-  text-transform:uppercase;letter-spacing:.06em;
+  display:inline-flex; align-items:center;
+  margin-left:8px; padding:2px 7px;
+  border-radius:var(--r-pill);
+  border:1px solid var(--hairline-on-dark);
+  background:transparent;
+  color:var(--text-dim);
+  font-family:var(--font-ui);
+  font-size:var(--fs-micro-cap);
+  font-weight:var(--fw-bold);
+  text-transform:uppercase;
+  letter-spacing:var(--ls-micro-cap);
   vertical-align:middle;
 }
 
 .archive-issue-preheader{
-  font-size:0.78rem;color:var(--text-muted);
-  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  font-size:var(--fs-micro-cap);
+  color:var(--text-dim);
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
 }
 
 .archive-issue-meta{
-  font-size:0.7rem;color:var(--text-dim);margin-top:5px;
+  font-size:var(--fs-micro-cap);
+  color:var(--text-dim);
+  margin-top:5px;
 }
 
 .read-brief-btn{
-  display:inline-flex;align-items:center;gap:6px;
-  background:transparent;border:1px solid var(--border-default);
-  border-radius:var(--radius);color:var(--text-muted);
-  font-family:var(--font);font-size:0.78rem;font-weight:600;
-  padding:7px 14px;text-decoration:none;white-space:nowrap;flex-shrink:0;
-  transition:all .15s;
+  display:inline-flex; align-items:center; gap:6px;
+  background:transparent;
+  border:1px solid var(--hairline-on-dark);
+  border-radius:var(--r-pill);
+  color:var(--text-dim);
+  font-family:var(--font-ui);
+  font-size:var(--fs-micro-cap);
+  font-weight:var(--fw-bold);
+  letter-spacing:var(--ls-micro-cap);
+  text-transform:uppercase;
+  padding:7px 16px;
+  text-decoration:none;
+  white-space:nowrap; flex-shrink:0;
+  transition:border-color 120ms linear, color 120ms linear;
 }
-.read-brief-btn:hover{border-color:var(--accent-border);color:var(--accent);}
+.read-brief-btn:hover{ border-color:var(--on-primary); color:var(--on-primary); }
 
 @media(max-width:600px){
-  .archive-main{padding:28px 16px 60px;}
-  .archive-issue{flex-direction:column;align-items:flex-start;gap:10px;}
-  .archive-issue-left{min-width:0;width:100%;}
-  .archive-issue-subject,.archive-issue-preheader{white-space:normal;}
-  .read-brief-btn{width:100%;text-align:center;justify-content:center;}
-  .archive-title{font-size:1.5rem;}
+  .archive-main{ padding:28px 16px 60px; }
+  .archive-issue{ flex-direction:column; align-items:flex-start; gap:10px; }
+  .archive-issue-left{ min-width:0; width:100%; }
+  .archive-issue-subject,.archive-issue-preheader{ white-space:normal; }
+  .read-brief-btn{ width:100%; text-align:center; justify-content:center; }
+  .archive-title{ font-size:var(--fs-display-lg); }
 }
