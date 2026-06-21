@@ -10,11 +10,11 @@
   },
   "last_retry": {
     "event_name": "schedule",
-    "run_id": "27863225970",
+    "run_id": "27896918926",
     "status": "success",
     "retry_needed": false,
-    "ist_time": "2026-06-20 12:13:25 IST",
-    "utc_time": "2026-06-20 06:43:25Z"
+    "ist_time": "2026-06-21 12:42:55 IST",
+    "utc_time": "2026-06-21 07:12:55Z"
   },
   "last_send": {
     "event_name": "schedule",
