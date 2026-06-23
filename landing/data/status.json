@@ -1,11 +1,11 @@
 {
-  "latest_issue_date": "2026-06-22",
-  "latest_complete_issue_date": "2026-06-22",
+  "latest_issue_date": "2026-06-23",
+  "latest_complete_issue_date": "2026-06-23",
   "generation_status": "complete",
   "generation_started_at_utc": null,
-  "generation_completed_at_utc": "2026-06-22T07:06:07.682859Z",
+  "generation_completed_at_utc": "2026-06-23T05:53:22.846420Z",
   "generation_started_at_ist": null,
-  "generation_completed_at_ist": "2026-06-22T12:36:07.682873+05:30",
+  "generation_completed_at_ist": "2026-06-23T11:23:22.846437+05:30",
   "last_generation_run_id": "27081394493",
   "last_generation_attempt": "scheduled_0700",
   "last_generation_error": null,
@@ -13,9 +13,9 @@
   "last_email_sent_date": null,
   "last_email_sent_at_utc": null,
   "last_email_status": "not_sent",
-  "current_date": "2026-06-22",
+  "current_date": "2026-06-23",
   "status": "complete",
   "last_started_at": null,
-  "last_completed_at": "2026-06-22T07:06:07.682859Z",
+  "last_completed_at": "2026-06-23T05:53:22.846420Z",
   "last_error": null
 }
