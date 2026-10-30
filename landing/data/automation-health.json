@@ -18,11 +18,11 @@
   },
   "last_send": {
     "event_name": "schedule",
-    "run_id": "40845420363",
-    "issue_date": "2026-10-29",
+    "run_id": "41030027250",
+    "issue_date": "2026-10-30",
     "status": "failure",
-    "ist_time": "2026-10-29 14:38:50 IST",
-    "utc_time": "2026-10-29 09:08:50Z",
+    "ist_time": "2026-10-30 14:43:36 IST",
+    "utc_time": "2026-10-30 09:13:36Z",
     "send_live": "true (scheduled)"
   }
 }
